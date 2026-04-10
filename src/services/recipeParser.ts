@@ -1,5 +1,4 @@
 import axios from 'axios';
-import * as cheerio from 'cheerio';
 import { Ingredient } from '../models/types';
 import { categoriseIngredient } from '../utils/ingredientCategories';
 import uuid from '../utils/uuid';
@@ -18,38 +17,46 @@ export async function parseRecipeFromUrl(url: string): Promise<ParsedRecipe> {
     timeout: 15000,
   });
   const html = response.data as string;
-  const $ = cheerio.load(html);
 
-  // 1. Try JSON-LD schema.org/Recipe
-  const jsonLdResult = tryJsonLd($, url);
+  // 1. Try JSON-LD schema.org/Recipe (works on most recipe sites)
+  const jsonLdResult = tryJsonLd(html);
   if (jsonLdResult) return jsonLdResult;
 
-  // 2. Fallback: heuristic HTML parsing
-  return tryHtmlHeuristic($, url);
+  // 2. Fallback: regex heuristic
+  return tryHtmlHeuristic(html);
 }
 
-function tryJsonLd($: ReturnType<typeof cheerio.load>, url: string): ParsedRecipe | null {
-  let result: ParsedRecipe | null = null;
+// ─── JSON-LD extraction (no DOM parser needed) ───────────────────────────────
 
-  $('script[type="application/ld+json"]').each((_, el) => {
-    if (result) return;
+function tryJsonLd(html: string): ParsedRecipe | null {
+  // Extract all <script type="application/ld+json"> blocks
+  const scriptRe = /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
+  let match: RegExpExecArray | null;
+
+  while ((match = scriptRe.exec(html)) !== null) {
     try {
-      const raw = $(el).html() ?? '';
-      const parsed = JSON.parse(raw);
-      const schemas = Array.isArray(parsed) ? parsed : parsed['@graph'] ? parsed['@graph'] : [parsed];
+      const parsed = JSON.parse(match[1]);
+      const schemas = Array.isArray(parsed)
+        ? parsed
+        : parsed['@graph']
+        ? parsed['@graph']
+        : [parsed];
 
       for (const schema of schemas) {
-        if (schema['@type'] === 'Recipe' || schema['@type']?.includes?.('Recipe')) {
-          result = extractFromSchema(schema);
-          return;
+        const type = schema['@type'];
+        const isRecipe =
+          type === 'Recipe' ||
+          (Array.isArray(type) && type.includes('Recipe'));
+        if (isRecipe) {
+          return extractFromSchema(schema);
         }
       }
     } catch {
-      // ignore parse errors
+      // malformed JSON — skip
     }
-  });
+  }
 
-  return result;
+  return null;
 }
 
 function extractFromSchema(schema: any): ParsedRecipe {
@@ -62,7 +69,8 @@ function extractFromSchema(schema: any): ParsedRecipe {
   const image = schema.image;
   let imageUri: string | undefined;
   if (typeof image === 'string') imageUri = image;
-  else if (Array.isArray(image) && image.length > 0) imageUri = typeof image[0] === 'string' ? image[0] : image[0]?.url;
+  else if (Array.isArray(image) && image.length > 0)
+    imageUri = typeof image[0] === 'string' ? image[0] : image[0]?.url;
   else if (image?.url) imageUri = image.url;
 
   return {
@@ -82,48 +90,65 @@ function flattenInstructions(raw: any[]): string[] {
     } else if (item['@type'] === 'HowToStep') {
       steps.push(item.text ?? item.name ?? '');
     } else if (item['@type'] === 'HowToSection') {
-      const sectionSteps = flattenInstructions(item.itemListElement ?? []);
-      steps.push(...sectionSteps);
+      steps.push(...flattenInstructions(item.itemListElement ?? []));
     }
   }
   return steps.filter(Boolean);
 }
 
-function tryHtmlHeuristic($: ReturnType<typeof cheerio.load>, url: string): ParsedRecipe {
-  const title = $('h1').first().text().trim() || $('title').text().trim() || 'Untitled Recipe';
+// ─── HTML heuristic fallback (regex only, no DOM) ───────────────────────────
 
-  // Find ingredients: look for lists near "ingredient" headings
+function tryHtmlHeuristic(html: string): ParsedRecipe {
+  // Title: grab first <h1> or <title>
+  const h1Match = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
+  const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+  const title = stripTags(h1Match?.[1] ?? titleMatch?.[1] ?? 'Untitled Recipe').trim();
+
+  // Ingredients: find <li> items inside a container whose text contains "ingredient"
   const ingredientStrings: string[] = [];
-  $('*').each((_, el) => {
-    const text = $(el).text().toLowerCase();
-    if (text.includes('ingredient') && $(el).is('h2,h3,h4,li,p,span,div')) {
-      const parent = $(el).parent();
-      parent.find('li').each((_, li) => {
-        const t = $(li).text().trim();
-        if (t) ingredientStrings.push(t);
-      });
+  const ulBlocks = html.match(/<ul[\s\S]*?<\/ul>/gi) ?? [];
+  for (const block of ulBlocks) {
+    if (/ingredient/i.test(block)) {
+      const items = block.match(/<li[^>]*>([\s\S]*?)<\/li>/gi) ?? [];
+      for (const item of items) {
+        const text = stripTags(item).trim();
+        if (text.length > 1 && text.length < 200) ingredientStrings.push(text);
+      }
+      if (ingredientStrings.length > 0) break;
     }
-  });
+  }
 
-  // Fallback: grab all list items
+  // Fallback: grab all <li> items
   if (ingredientStrings.length === 0) {
-    $('ul li').each((_, li) => {
-      const t = $(li).text().trim();
-      if (t.length > 2 && t.length < 200) ingredientStrings.push(t);
-    });
+    const allLi = html.match(/<li[^>]*>([\s\S]*?)<\/li>/gi) ?? [];
+    for (const item of allLi) {
+      const text = stripTags(item).trim();
+      if (text.length > 2 && text.length < 200) ingredientStrings.push(text);
+    }
   }
 
   const ingredients = ingredientStrings.slice(0, 40).map((s) => parseIngredientString(s));
 
-  // Find instructions
+  // Instructions: look for ordered list items
   const instructions: string[] = [];
-  $('ol li, .instructions li, [class*="step"] p, [class*="instruction"] p').each((_, el) => {
-    const t = $(el).text().trim();
-    if (t.length > 10) instructions.push(t);
-  });
+  const olBlocks = html.match(/<ol[\s\S]*?<\/ol>/gi) ?? [];
+  for (const block of olBlocks) {
+    const items = block.match(/<li[^>]*>([\s\S]*?)<\/li>/gi) ?? [];
+    for (const item of items) {
+      const text = stripTags(item).trim();
+      if (text.length > 10) instructions.push(text);
+    }
+    if (instructions.length > 0) break;
+  }
 
   return { title, description: '', ingredients, instructions };
 }
+
+function stripTags(html: string): string {
+  return html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+// ─── Ingredient string parser ────────────────────────────────────────────────
 
 const AMOUNT_UNIT_RE =
   /^([\d½¼¾⅓⅔⅛⅜⅝⅞\s/.,]+)?\s*(cups?|tbsp?|tsp?|tablespoons?|teaspoons?|g|kg|ml|l|lb|oz|litre?s?|pinch|bunch|cloves?|slices?|cans?|tins?|packets?|handful|large|medium|small|whole|fresh)?\s*(.+)$/i;

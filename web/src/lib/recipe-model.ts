@@ -38,6 +38,9 @@ export const UNITS = [
   "piece",
 ] as const;
 
+export const RECIPE_KINDS = ["dinner", "snack"] as const;
+export type RecipeKind = (typeof RECIPE_KINDS)[number];
+
 export const ingredientSchema = z.object({
   group: z.string().nullable(),
   raw: z.string(),
@@ -51,6 +54,7 @@ export type IngredientInput = z.infer<typeof ingredientSchema>;
 
 export const recipeInputSchema = z.object({
   title: z.string().trim().min(1, "Give the recipe a title"),
+  kind: z.enum(RECIPE_KINDS),
   description: z.string(),
   servings: z.number().int().min(1, "How many does it serve?").max(50),
   prepMinutes: z.number().int().min(0).nullable(),
@@ -71,6 +75,7 @@ export type RecipeInput = z.infer<typeof recipeInputSchema>;
 export function emptyRecipe(): RecipeInput {
   return {
     title: "",
+    kind: "dinner",
     description: "",
     servings: 4,
     prepMinutes: null,

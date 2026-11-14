@@ -12,6 +12,7 @@ export default async function EditRecipePage({ params }: PageProps<"/recipes/[id
       recipeId={recipe.id}
       initial={{
         title: recipe.title,
+        kind: recipe.kind,
         description: recipe.description,
         servings: recipe.servings,
         prepMinutes: recipe.prepMinutes,

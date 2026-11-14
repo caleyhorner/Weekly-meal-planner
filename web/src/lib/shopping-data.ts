@@ -1,7 +1,7 @@
 import "server-only";
 import { and, asc, eq, inArray } from "drizzle-orm";
 import { db, schema } from "@/db";
-import { getWeek } from "./plan";
+import { getWeek, getWeekSnacks } from "./plan";
 import { buildShoppingList, type ListInput, type ShoppingItem } from "./shopping";
 
 const { recipeIngredients, itemAliases, staples, shoppingHaveIt, householdSettings } = schema;
@@ -18,12 +18,18 @@ export async function listAliases() {
 export type WeekList = {
   items: (ShoppingItem & { haveIt: boolean })[];
   dinners: number;
+  snacks: number;
 };
 
 export async function getShoppingList(weekStart: string): Promise<WeekList> {
-  const { days } = await getWeek(weekStart);
+  const [{ days }, snacks] = await Promise.all([getWeek(weekStart), getWeekSnacks(weekStart)]);
   const planned = days.filter((d) => d.status === "recipe" && d.recipe);
-  const ids = [...new Set(planned.map((d) => d.recipe!.id))];
+  // Dinners (at each night's size) and snacks (by the batch) both go on the list.
+  const meals = [
+    ...planned.map((d) => ({ recipe: d.recipe!, factor: d.multiplier })),
+    ...snacks.map((s) => ({ recipe: s.recipe, factor: s.multiplier })),
+  ];
+  const ids = [...new Set(meals.map((m) => m.recipe.id))];
 
   const [ingredients, aliasRows, stapleRows, haveRows] = await Promise.all([
     ids.length
@@ -41,15 +47,15 @@ export async function getShoppingList(weekStart: string): Promise<WeekList> {
     byRecipe.set(ing.recipeId, list);
   }
 
-  // One line per ingredient per planned night (the same recipe twice counts twice).
-  const lines: ListInput[] = planned.flatMap((d) =>
-    (byRecipe.get(d.recipe!.id) ?? []).map((ing) => ({
+  // One line per ingredient per planned meal (the same recipe twice counts twice).
+  const lines: ListInput[] = meals.flatMap((m) =>
+    (byRecipe.get(m.recipe.id) ?? []).map((ing) => ({
       item: ing.item,
       amount: ing.amount,
       unit: ing.unit,
       category: ing.category,
-      recipe: d.recipe!.title,
-      factor: d.multiplier,
+      recipe: m.recipe.title,
+      factor: m.factor,
     })),
   );
 
@@ -61,6 +67,7 @@ export async function getShoppingList(weekStart: string): Promise<WeekList> {
   return {
     items: list.map((i) => ({ ...i, haveIt: have.has(i.item) })),
     dinners: planned.length,
+    snacks: snacks.length,
   };
 }
 

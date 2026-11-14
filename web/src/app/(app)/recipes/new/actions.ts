@@ -103,6 +103,7 @@ export async function importRecipeAction(formData: FormData): Promise<ImportResu
 
   const draft: RecipeInput = {
     title: extracted.title,
+    kind: extracted.kind,
     description: extracted.description,
     servings: extracted.servings ?? 0, // 0 makes the review screen ask for it
     prepMinutes: extracted.prep_minutes,

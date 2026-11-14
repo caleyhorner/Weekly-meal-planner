@@ -15,9 +15,12 @@ import {
 export const SOURCE_TYPES = ["book", "instagram", "web", "text"] as const;
 export type SourceType = (typeof SOURCE_TYPES)[number];
 
+export const RECIPE_KINDS = ["dinner", "snack"] as const;
+export type RecipeKind = (typeof RECIPE_KINDS)[number];
 export const recipes = pgTable("recipes", {
   id: uuid("id").primaryKey().defaultRandom(),
   title: text("title").notNull(),
+  kind: text("kind").$type<RecipeKind>().notNull().default("dinner"),
   description: text("description").notNull().default(""),
   servings: integer("servings").notNull(),
   prepMinutes: integer("prep_minutes"),
@@ -84,6 +87,22 @@ export const planDays = pgTable("plan_days", {
   /** Chosen scale for this meal (½, 1, 2 or 3); null = the household rule decides. */
   multiplier: doublePrecision("multiplier"),
 });
+
+/** Snacks to make in a given week (not tied to a day). */
+export const weekSnacks = pgTable(
+  "week_snacks",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    weekStart: date("week_start").notNull(),
+    recipeId: uuid("recipe_id")
+      .notNull()
+      .references(() => recipes.id, { onDelete: "cascade" }),
+    /** Batches: ½, 1, 2 or 3 times the recipe as written. */
+    multiplier: doublePrecision("multiplier").notNull().default(1),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("week_snacks_week_idx").on(t.weekStart)],
+);
 
 export const shoppingHaveIt = pgTable(
   "shopping_have_it",

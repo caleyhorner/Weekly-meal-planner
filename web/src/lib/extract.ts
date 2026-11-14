@@ -17,6 +17,9 @@ const ExtractedRecipe = z.object({
     .nullable()
     .describe("If found_recipe is false or the recipe is incomplete, a short plain-English explanation for the user"),
   title: z.string(),
+  kind: z
+    .enum(["dinner", "snack"])
+    .describe("'dinner' for a main meal; 'snack' for snacks, baking, lunchbox treats, dips, bliss balls, muffins and the like"),
   description: z.string().describe("One short sentence from the source, or empty"),
   servings: z.number().int().nullable().describe("Number of servings stated by the source; null if not stated"),
   prep_minutes: z.number().int().nullable(),

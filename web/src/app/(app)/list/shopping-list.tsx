@@ -63,11 +63,13 @@ function ItemMenu({
 export function ShoppingList({
   weekStart,
   dinners,
+  snacks,
   items,
   canSendToOpenClaw,
 }: {
   weekStart: string;
   dinners: number;
+  snacks: number;
   items: Item[];
   canSendToOpenClaw: boolean;
 }) {
@@ -149,7 +151,13 @@ export function ShoppingList({
   return (
     <div>
       <p className="mt-3 text-[17px]">
-        From {dinners} {dinners === 1 ? "dinner" : "dinners"}. Untick anything you already have, then
+        From {[
+          dinners && `${dinners} ${dinners === 1 ? "dinner" : "dinners"}`,
+          snacks && `${snacks} ${snacks === 1 ? "snack" : "snacks"}`,
+        ]
+          .filter(Boolean)
+          .join(" and ")}
+        {". "}Untick anything you already have, then
         send the list to Telegram.
       </p>
 

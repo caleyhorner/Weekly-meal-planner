@@ -116,3 +116,51 @@ export async function swapDays(from: string, to: string) {
     if (moved.length) await tx.insert(planDays).values(moved);
   });
 }
+
+// ─── Snacks to make each week (not tied to a day) ────────────────────────────
+
+export type WeekSnack = {
+  id: string;
+  recipe: { id: string; title: string; servings: number; minutes: number | null };
+  multiplier: number;
+};
+
+export async function getWeekSnacks(weekStart: string): Promise<WeekSnack[]> {
+  const { weekSnacks } = schema;
+  const rows = await db
+    .select({
+      id: weekSnacks.id,
+      multiplier: weekSnacks.multiplier,
+      recipeId: recipes.id,
+      title: recipes.title,
+      servings: recipes.servings,
+      prepMinutes: recipes.prepMinutes,
+      cookMinutes: recipes.cookMinutes,
+    })
+    .from(weekSnacks)
+    .innerJoin(recipes, eq(weekSnacks.recipeId, recipes.id))
+    .where(eq(weekSnacks.weekStart, weekStart))
+    .orderBy(weekSnacks.createdAt);
+  return rows.map((r) => ({
+    id: r.id,
+    multiplier: r.multiplier,
+    recipe: {
+      id: r.recipeId,
+      title: r.title,
+      servings: r.servings,
+      minutes: (r.prepMinutes ?? 0) + (r.cookMinutes ?? 0) || null,
+    },
+  }));
+}
+
+export async function addWeekSnack(weekStart: string, recipeId: string) {
+  await db.insert(schema.weekSnacks).values({ weekStart, recipeId, multiplier: 1 });
+}
+
+export async function removeWeekSnack(id: string) {
+  await db.delete(schema.weekSnacks).where(eq(schema.weekSnacks.id, id));
+}
+
+export async function setSnackMultiplier(id: string, multiplier: number) {
+  await db.update(schema.weekSnacks).set({ multiplier }).where(eq(schema.weekSnacks.id, id));
+}

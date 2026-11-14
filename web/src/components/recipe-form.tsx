@@ -249,6 +249,25 @@ export function RecipeForm({
             required
           />
         </div>
+        <div role="radiogroup" aria-label="Type of recipe" className="grid grid-cols-2 gap-1 rounded-2xl bg-surface-2 p-1">
+          {(
+            [
+              ["dinner", "Dinner"],
+              ["snack", "Snack"],
+            ] as const
+          ).map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              role="radio"
+              aria-checked={r.kind === value}
+              onClick={() => set("kind", value)}
+              className={`min-h-11 rounded-xl text-base ${r.kind === value ? "bg-surface font-bold shadow-sm" : "font-medium"}`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
         <div>
           <label className="label" htmlFor="description">
             Short description

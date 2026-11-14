@@ -32,6 +32,8 @@ export const recipes = pgTable("recipes", {
   sourceLabel: text("source_label").notNull().default(""),
   sourceUrl: text("source_url"),
   heroImageUrl: text("hero_image_url"),
+  /** Saved by bulk import without a review; shown under "To check" until confirmed. */
+  needsReview: boolean("needs_review").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });

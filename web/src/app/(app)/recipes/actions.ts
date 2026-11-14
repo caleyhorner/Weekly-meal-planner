@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireHousehold } from "@/lib/auth";
 import { recipeInputSchema, type RecipeInput } from "@/lib/recipe-model";
-import { deleteRecipe, findSimilarTitles, saveRecipe } from "@/lib/recipes";
+import { deleteRecipe, findSimilarTitles, markChecked, saveRecipe } from "@/lib/recipes";
 
 export type SaveResult = { error: string } | undefined;
 
@@ -29,4 +29,12 @@ export async function deleteRecipeAction(id: string) {
 export async function similarTitlesAction(title: string, excludeId?: string) {
   await requireHousehold();
   return findSimilarTitles(title, excludeId);
+}
+
+export async function markCheckedAction(id: string) {
+  await requireHousehold();
+  if (!/^[0-9a-f-]{36}$/i.test(id)) throw new Error("Bad recipe");
+  await markChecked(id);
+  revalidatePath("/recipes");
+  revalidatePath(`/recipes/${id}`);
 }

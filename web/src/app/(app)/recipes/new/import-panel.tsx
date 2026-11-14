@@ -1,25 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { useRef, useState, useTransition } from "react";
 import { RecipeForm } from "@/components/recipe-form";
 import { emptyRecipe, type RecipeInput } from "@/lib/recipe-model";
 import { importRecipeAction } from "./actions";
-
-const MAX_EDGE = 1568; // larger than this gains nothing for the AI and costs more
-
-/** Shrinks a photo in the browser so uploads are quick and cheap. */
-async function resizeImage(file: File): Promise<Blob> {
-  const bitmap = await createImageBitmap(file);
-  const scale = Math.min(1, MAX_EDGE / Math.max(bitmap.width, bitmap.height));
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.round(bitmap.width * scale);
-  canvas.height = Math.round(bitmap.height * scale);
-  canvas.getContext("2d")!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-  bitmap.close();
-  return new Promise((resolve, reject) =>
-    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("resize failed"))), "image/jpeg", 0.85),
-  );
-}
+import { resizeImage } from "@/lib/resize-image";
 
 type Photo = { id: string; blob: Blob; preview: string };
 
@@ -100,6 +86,9 @@ export function ImportPanel() {
       <p className="mt-1 text-muted">
         Photos of cookbook pages, screenshots, a link or pasted text. Any mix works.
       </p>
+      <Link href="/recipes/bulk" className="mt-3 inline-flex min-h-11 items-center font-bold underline">
+        Got lots of recipes? Bulk import them
+      </Link>
 
       <section className="mt-6">
         <h2 className="label">Photos or screenshots</h2>

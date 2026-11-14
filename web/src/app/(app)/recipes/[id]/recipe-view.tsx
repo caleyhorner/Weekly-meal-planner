@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { formatMinutes, formatQuantity, relativeDays } from "@/lib/format";
 import { splitLeadingQuantity } from "@/lib/parse-ingredient";
+import { markCheckedAction } from "../actions";
 
 type ViewIngredient = {
   id: string;
@@ -18,6 +19,7 @@ type ViewIngredient = {
 export type ViewRecipe = {
   id: string;
   title: string;
+  needsReview: boolean;
   description: string;
   servings: number;
   prepMinutes: number | null;
@@ -87,6 +89,39 @@ function useWakeLock(active: boolean) {
   }, [active]);
 }
 
+/** Shown on recipes saved by bulk import until someone confirms they read correctly. */
+function CheckBanner({ id }: { id: string }) {
+  const [pending, startTransition] = useTransition();
+  const [done, setDone] = useState(false);
+  if (done) return null;
+  return (
+    <div className="rounded-[20px] bg-lemon p-4 text-lemon-ink">
+      <p className="font-bold">Added by bulk import. Give it a quick check.</p>
+      <p className="mt-1 text-[15px]">
+        Compare it with the original (at the bottom of the page) and fix anything the AI misread.
+      </p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <button
+          type="button"
+          className="btn bg-ink text-bg"
+          disabled={pending}
+          onClick={() =>
+            startTransition(async () => {
+              setDone(true);
+              await markCheckedAction(id);
+            })
+          }
+        >
+          Looks good
+        </button>
+        <Link href={`/recipes/${id}/edit`} className="btn bg-surface text-ink">
+          Edit
+        </Link>
+      </div>
+    </div>
+  );
+}
+
 export function RecipeView({
   recipe,
   initialServings,
@@ -146,6 +181,8 @@ export function RecipeView({
           className="aspect-[16/9] w-full rounded-[20px] object-cover"
         />
       )}
+
+      {recipe.needsReview && !cooking && <CheckBanner id={recipe.id} />}
 
       <header>
         <h1 className="text-[34px] leading-tight font-extrabold">{recipe.title}</h1>

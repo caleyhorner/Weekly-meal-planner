@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { listRecipes, listTags, type RecipeSort } from "@/lib/recipes";
+import { countToCheck, listRecipes, listTags, type RecipeSort } from "@/lib/recipes";
 import type { RecipeKind } from "@/lib/recipe-model";
 import { formatMinutes, relativeDays } from "@/lib/format";
 
@@ -9,13 +9,19 @@ export default async function RecipesPage({ searchParams }: PageProps<"/recipes"
   const tag = typeof sp.tag === "string" ? sp.tag : "";
   const sort: RecipeSort = sp.sort === "az" ? "az" : "lately";
   const kind: RecipeKind | undefined = sp.kind === "dinner" || sp.kind === "snack" ? sp.kind : undefined;
-  const [recipes, tags] = await Promise.all([listRecipes({ q, tag, sort, kind }), listTags()]);
+  const toCheck = sp.check === "1";
+  const [recipes, tags, checkCount] = await Promise.all([
+    listRecipes({ q, tag, sort, kind, toCheck }),
+    listTags(),
+    countToCheck(),
+  ]);
 
   const href = (changes: { tag?: string; sort?: RecipeSort; kind?: RecipeKind | "" }) => {
     const params = new URLSearchParams();
     if (q) params.set("q", q);
     const k = changes.kind ?? kind;
     if (k) params.set("kind", k);
+    if (toCheck) params.set("check", "1");
     const t = changes.tag ?? tag;
     if (t) params.set("tag", t);
     const s = changes.sort ?? sort;
@@ -26,12 +32,33 @@ export default async function RecipesPage({ searchParams }: PageProps<"/recipes"
 
   return (
     <div className="mx-auto max-w-3xl">
-      <h1 className="pt-2 text-3xl leading-tight font-extrabold">What&apos;s for dinner?</h1>
+      <h1 className="pt-2 text-3xl leading-tight font-extrabold">
+        {toCheck ? "Recipes to check" : "What's for dinner?"}
+      </h1>
+      {toCheck ? (
+        <p className="mt-1 text-[17px] text-muted">
+          These were added by bulk import. Open each one, fix anything the AI misread, then tap{" "}
+          <strong>Looks good</strong>.{" "}
+          <Link href="/recipes" className="font-bold text-ink underline">
+            Show all recipes
+          </Link>
+        </p>
+      ) : (
+        checkCount > 0 && (
+          <Link href="/recipes?check=1" className="mt-3 flex min-h-12 items-center justify-between rounded-2xl bg-lemon px-4 font-bold text-lemon-ink">
+            <span>
+              {checkCount} {checkCount === 1 ? "recipe" : "recipes"} to check
+            </span>
+            <span aria-hidden>›</span>
+          </Link>
+        )
+      )}
 
       <form action="/recipes" role="search" className="mt-4">
         {tag && <input type="hidden" name="tag" value={tag} />}
         {sort !== "lately" && <input type="hidden" name="sort" value={sort} />}
         {kind && <input type="hidden" name="kind" value={kind} />}
+        {toCheck && <input type="hidden" name="check" value="1" />}
         <label htmlFor="q" className="sr-only">
           Search recipes or ingredients
         </label>
@@ -143,6 +170,7 @@ export default async function RecipesPage({ searchParams }: PageProps<"/recipes"
                   <span className="min-w-0 flex-1">
                     <span className="block text-lg leading-snug font-bold">{r.title}</span>
                     <span className="mt-0.5 block text-[15px] text-muted">
+                      {r.needsReview ? "To check. " : ""}
                       {r.kind === "snack" ? "Snack. " : ""}
                       {cooked ? `Last had ${cooked}` : "Not tried yet"}
                     </span>

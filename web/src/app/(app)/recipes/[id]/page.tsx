@@ -13,6 +13,7 @@ export default async function RecipePage({ params, searchParams }: PageProps<"/r
       recipe={{
         id: recipe.id,
         title: recipe.title,
+        needsReview: recipe.needsReview,
         description: recipe.description,
         servings: recipe.servings,
         prepMinutes: recipe.prepMinutes,

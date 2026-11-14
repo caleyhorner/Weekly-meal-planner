@@ -23,6 +23,7 @@ export type RecipeSummary = {
   id: string;
   title: string;
   kind: RecipeKind;
+  needsReview: boolean;
   servings: number;
   tags: string[];
   heroImageUrl: string | null;
@@ -39,6 +40,7 @@ export async function listRecipes(opts: {
   /** "lately": longest since last cooked first, never-cooked last. */
   sort?: RecipeSort;
   kind?: RecipeKind;
+  toCheck?: boolean;
 }): Promise<RecipeSummary[]> {
   const where: SQL[] = [];
   const q = opts.q?.trim();
@@ -55,12 +57,14 @@ export async function listRecipes(opts: {
   }
   if (opts.tag) where.push(sql`${opts.tag} = any(${recipes.tags})`);
   if (opts.kind) where.push(eq(recipes.kind, opts.kind));
+  if (opts.toCheck) where.push(eq(recipes.needsReview, true));
 
   return db
     .select({
       id: recipes.id,
       title: recipes.title,
       kind: recipes.kind,
+      needsReview: recipes.needsReview,
       servings: recipes.servings,
       tags: recipes.tags,
       heroImageUrl: recipes.heroImageUrl,
@@ -123,7 +127,11 @@ export async function findSimilarTitles(title: string, excludeId?: string) {
   return rows;
 }
 
-export async function saveRecipe(input: RecipeInput, id?: string): Promise<string> {
+export async function saveRecipe(
+  input: RecipeInput,
+  id?: string,
+  opts: { needsReview?: boolean } = {},
+): Promise<string> {
   return db.transaction(async (tx) => {
     const values = {
       title: input.title,
@@ -139,6 +147,8 @@ export async function saveRecipe(input: RecipeInput, id?: string): Promise<strin
       sourceLabel: input.sourceLabel,
       sourceUrl: input.sourceUrl,
       heroImageUrl: input.heroImage,
+      // Saving from the edit form counts as checking it.
+      needsReview: opts.needsReview ?? false,
       updatedAt: new Date(),
     };
     let recipeId = id;
@@ -177,6 +187,30 @@ export async function saveRecipe(input: RecipeInput, id?: string): Promise<strin
     }
     return recipeId!;
   });
+}
+
+export async function countToCheck(): Promise<number> {
+  const [row] = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(recipes)
+    .where(eq(recipes.needsReview, true));
+  return row?.n ?? 0;
+}
+
+export async function markChecked(id: string) {
+  await db.update(recipes).set({ needsReview: false }).where(eq(recipes.id, id));
+}
+
+/** A recipe already imported from this link (ignoring tracking bits like ?utm_ and #). */
+export async function findBySourceUrl(url: string) {
+  const clean = url.trim().replace(/[?#].*$/, "").replace(/\/$/, "");
+  if (!clean) return null;
+  const [row] = await db
+    .select({ id: recipes.id, title: recipes.title })
+    .from(recipes)
+    .where(sql`regexp_replace(regexp_replace(${recipes.sourceUrl}, '[?#].*$', ''), '/$', '') = ${clean}`)
+    .limit(1);
+  return row ?? null;
 }
 
 export async function deleteRecipe(id: string) {

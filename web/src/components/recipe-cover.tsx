@@ -1,17 +1,5 @@
-import { cardColours } from "@/lib/format";
-
-/** Food photo if there is one, otherwise a coloured card with the recipe's initial. */
-export function RecipeCover({
-  title,
-  imageKey,
-  className = "",
-  large = false,
-}: {
-  title: string;
-  imageKey: string | null;
-  className?: string;
-  large?: boolean;
-}) {
+/** A recipe photo, or a plain "no photo" tile. Used by the cover picker on the edit form. */
+export function RecipeCover({ imageKey, className = "" }: { imageKey: string | null; className?: string }) {
   if (imageKey) {
     return (
       // eslint-disable-next-line @next/next/no-img-element -- private images served via our own route
@@ -23,17 +11,9 @@ export function RecipeCover({
       />
     );
   }
-  const { fg, bg } = cardColours(title);
-  const initial = title.trim().charAt(0).toUpperCase() || "?";
   return (
-    <div
-      aria-hidden
-      className={`flex h-full w-full items-center justify-center font-serif font-semibold ${
-        large ? "text-8xl" : "text-5xl"
-      } ${className}`}
-      style={{ background: bg, color: fg }}
-    >
-      {initial}
+    <div className={`flex h-full w-full items-center justify-center bg-surface-2 text-sm font-bold text-muted ${className}`}>
+      No photo
     </div>
   );
 }

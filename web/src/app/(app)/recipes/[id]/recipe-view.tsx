@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { RecipeCover } from "@/components/recipe-cover";
 import { formatMinutes, formatQuantity, relativeDays } from "@/lib/format";
 import { splitLeadingQuantity } from "@/lib/parse-ingredient";
 
@@ -45,15 +44,6 @@ function groupIngredients(list: ViewIngredient[]) {
   return groups;
 }
 
-function ingredientLine(ing: ViewIngredient, factor: number) {
-  if (ing.amount == null) {
-    // Nothing to scale ("salt, to taste") – show what the recipe said.
-    return { qty: "", text: ing.raw };
-  }
-  const qty = formatQuantity(ing.amount * factor, ing.unit);
-  return { qty, text: describeIngredient(ing) };
-}
-
 /**
  * The author's wording minus the leading quantity ("2 brown onions, finely diced"
  * → "brown onions, finely diced"), so the page stays faithful while the amount scales.
@@ -66,6 +56,12 @@ function describeIngredient(ing: ViewIngredient): string {
   return [ing.item, ing.prep].filter(Boolean).join(", ");
 }
 
+function ingredientLine(ing: ViewIngredient, factor: number) {
+  // Nothing to scale ("salt, to taste"): show what the recipe said.
+  if (ing.amount == null) return { qty: "", text: ing.raw };
+  return { qty: formatQuantity(ing.amount * factor, ing.unit), text: describeIngredient(ing) };
+}
+
 /** Keeps the screen on while cooking (where the browser supports it). */
 function useWakeLock(active: boolean) {
   useEffect(() => {
@@ -76,7 +72,7 @@ function useWakeLock(active: boolean) {
       try {
         lock = await navigator.wakeLock.request("screen");
       } catch {
-        /* user agent refused, e.g. low battery */
+        /* refused, e.g. low battery */
       }
       if (cancelled) lock?.release();
     };
@@ -94,135 +90,151 @@ function useWakeLock(active: boolean) {
 export function RecipeView({ recipe }: { recipe: ViewRecipe }) {
   const [servings, setServings] = useState(recipe.servings);
   const [cooking, setCooking] = useState(false);
-  const [done, setDone] = useState<Set<string>>(new Set());
+  const [currentStep, setCurrentStep] = useState(0);
+  const [gotIt, setGotIt] = useState<Set<string>>(new Set());
   const [showOriginal, setShowOriginal] = useState(false);
   useWakeLock(cooking);
 
   const factor = servings / recipe.servings;
   const groups = useMemo(() => groupIngredients(recipe.ingredients), [recipe.ingredients]);
-  const toggle = (key: string) =>
-    setDone((prev) => {
+  const servingOptions = useMemo(
+    () => [...new Set([2, 4, 6, 8, recipe.servings])].sort((a, b) => a - b),
+    [recipe.servings],
+  );
+
+  const toggleIngredient = (id: string) =>
+    setGotIt((prev) => {
       const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
+
+  const startStopCooking = () => {
+    setCooking((c) => !c);
+    setCurrentStep(0);
+    setGotIt(new Set());
+  };
 
   const prep = formatMinutes(recipe.prepMinutes);
   const cook = formatMinutes(recipe.cookMinutes);
   const cooked = relativeDays(recipe.lastCooked);
-  const hasOriginal = recipe.sources.length > 0 || recipe.sourceUrl;
-  const big = cooking ? "text-lg sm:text-xl" : "text-base";
+  const timing = [prep && `${prep} prep`, cook && `${cook} cook`].filter(Boolean).join(" and ");
+  const total = recipe.steps.length;
 
   return (
-    <article className="mx-auto max-w-2xl">
-      {!cooking && (
-        <div className="-mx-4 aspect-[16/9] overflow-hidden sm:mx-0 sm:rounded-3xl">
-          <RecipeCover title={recipe.title} imageKey={recipe.heroImage} large />
-        </div>
+    <article className="mx-auto flex max-w-2xl flex-col gap-4">
+      <Link href="/recipes" className="inline-flex min-h-11 items-center gap-1.5 self-start font-bold">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M15 18l-6-6 6-6" />
+        </svg>
+        Recipes
+      </Link>
+
+      {recipe.heroImage && !cooking && (
+        // eslint-disable-next-line @next/next/no-img-element -- private image served by our own route
+        <img
+          src={`/api/images/${recipe.heroImage}`}
+          alt=""
+          className="aspect-[16/9] w-full rounded-[20px] object-cover"
+        />
       )}
 
-      <header className={cooking ? "" : "mt-5"}>
-        <h1 className="font-serif text-3xl leading-tight font-semibold sm:text-4xl">
-          {recipe.title}
-        </h1>
-        {recipe.description && !cooking && <p className="mt-2 text-muted">{recipe.description}</p>}
-        <p className="mt-2 text-sm text-muted">
-          {[prep && `${prep} prep`, cook && `${cook} cook`].filter(Boolean).join(" · ")}
+      <header>
+        <h1 className="text-[34px] leading-tight font-extrabold">{recipe.title}</h1>
+        <p className="mt-2 text-[17px] text-muted">
+          {[timing && `${timing}.`, cooked ? `Last had ${cooked}.` : "Not tried yet."]
+            .filter(Boolean)
+            .join(" ")}
         </p>
-
-        <div className="mt-4 flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-1 rounded-full border border-line bg-surface p-1">
-            <button
-              type="button"
-              className="h-9 w-9 rounded-full text-lg font-semibold hover:bg-surface-2 disabled:opacity-40"
-              onClick={() => setServings((s) => Math.max(1, s - 1))}
-              disabled={servings <= 1}
-              aria-label="Fewer servings"
-            >
-              −
-            </button>
-            <span className="min-w-24 text-center text-sm font-semibold">
-              Serves {servings}
-            </span>
-            <button
-              type="button"
-              className="h-9 w-9 rounded-full text-lg font-semibold hover:bg-surface-2"
-              onClick={() => setServings((s) => s + 1)}
-              aria-label="More servings"
-            >
-              +
-            </button>
-          </div>
-          {servings !== recipe.servings && (
-            <button
-              type="button"
-              className="text-sm text-accent underline"
-              onClick={() => setServings(recipe.servings)}
-            >
-              Reset to {recipe.servings}
-            </button>
-          )}
-          <button
-            type="button"
-            className={cooking ? "btn-primary ml-auto" : "btn-ghost ml-auto"}
-            onClick={() => {
-              setCooking((c) => !c);
-              setDone(new Set());
-              window.scrollTo({ top: 0 });
-            }}
-          >
-            {cooking ? "Done cooking" : "Start cooking"}
-          </button>
-        </div>
-
-        {!cooking && (
+        {recipe.description && !cooking && <p className="mt-2 text-[17px]">{recipe.description}</p>}
+        {recipe.tags.length > 0 && !cooking && (
           <div className="mt-3 flex flex-wrap gap-2">
             {recipe.tags.map((t) => (
               <Link key={t} href={`/recipes?tag=${encodeURIComponent(t)}`} className="chip">
-                #{t}
+                {t}
               </Link>
             ))}
-            <span className="chip border-transparent bg-transparent">
-              {cooked ? `Last cooked ${cooked}` : "Not cooked yet"}
-            </span>
           </div>
-        )}
-        {cooking && (
-          <p className="mt-3 text-sm text-muted">
-            Screen stays on while cooking. Tap ingredients and steps to tick them off.
-          </p>
         )}
       </header>
 
-      <section className="mt-8">
-        <h2 className="label">Ingredients</h2>
+      <section aria-labelledby="servings-label" className="card p-3.5">
+        <p id="servings-label" className="mb-2.5 font-bold">
+          How many are eating?
+        </p>
+        <div
+          role="group"
+          aria-labelledby="servings-label"
+          className="grid gap-1.5"
+          style={{ gridTemplateColumns: `repeat(${servingOptions.length}, minmax(0, 1fr))` }}
+        >
+          {servingOptions.map((n) => (
+            <button
+              key={n}
+              type="button"
+              aria-pressed={servings === n}
+              onClick={() => setServings(n)}
+              className={`h-13 rounded-[14px] border-2 text-xl font-bold transition-colors ${
+                servings === n
+                  ? "border-ink bg-ink text-bg"
+                  : "border-surface-2 bg-surface hover:border-muted"
+              }`}
+            >
+              {n}
+            </button>
+          ))}
+        </div>
+        {servings !== recipe.servings && (
+          <p className="mt-2 text-[15px] text-muted">
+            Amounts adjusted from the original, which serves {recipe.servings}.
+          </p>
+        )}
+      </section>
+
+      <button type="button" onClick={startStopCooking} className={cooking ? "btn-ghost" : "btn-primary"}>
+        {cooking ? "Finish cooking" : "Start cooking"}
+      </button>
+      {cooking && (
+        <p className="-mt-2 text-[15px] text-muted">
+          The screen stays on. Tick off ingredients as you go and tap a step when you reach it.
+        </p>
+      )}
+
+      <section aria-labelledby="ingredients-heading" className="card px-4 pt-4 pb-2">
+        <h2 id="ingredients-heading" className="text-[22px] font-extrabold">
+          Ingredients
+        </h2>
         {groups.map((g, gi) => (
-          <div key={gi} className="mt-3">
-            {g.label && <h3 className="mb-1 font-serif text-lg font-semibold">{g.label}</h3>}
-            <ul className="divide-y divide-line rounded-2xl border border-line bg-surface">
+          <div key={gi}>
+            {g.label && <h3 className="mt-4 mb-0.5 font-bold text-accent">{g.label}</h3>}
+            <ul>
               {g.items.map((ing) => {
                 const { qty, text } = ingredientLine(ing, factor);
-                const key = `i:${ing.id}`;
-                const ticked = done.has(key);
+                const ticked = cooking && gotIt.has(ing.id);
+                const row = (
+                  <>
+                    <span className="text-2xl leading-none font-extrabold whitespace-nowrap tabular-nums">{qty}</span>
+                    <span className="text-lg leading-snug">{text}</span>
+                  </>
+                );
+                const rowClass = `grid w-full grid-cols-[112px_minmax(0,1fr)] items-baseline gap-3 border-t border-line py-2.5 text-left ${
+                  ticked ? "text-done line-through" : ""
+                }`;
                 return (
                   <li key={ing.id}>
-                    <button
-                      type="button"
-                      onClick={() => toggle(key)}
-                      className={`flex w-full items-baseline gap-3 px-4 py-3 text-left ${big} ${
-                        ticked ? "text-muted line-through" : ""
-                      }`}
-                    >
-                      <span
-                        aria-hidden
-                        className={`mt-1 inline-block h-4 w-4 shrink-0 self-start rounded border ${
-                          ticked ? "border-ok bg-ok" : "border-line"
-                        }`}
-                      />
-                      {qty && <span className="min-w-16 font-semibold">{qty}</span>}
-                      <span>{text}</span>
-                    </button>
+                    {cooking ? (
+                      <button
+                        type="button"
+                        aria-pressed={ticked}
+                        onClick={() => toggleIngredient(ing.id)}
+                        className={rowClass}
+                      >
+                        {row}
+                      </button>
+                    ) : (
+                      <div className={rowClass}>{row}</div>
+                    )}
                   </li>
                 );
               })}
@@ -231,75 +243,110 @@ export function RecipeView({ recipe }: { recipe: ViewRecipe }) {
         ))}
       </section>
 
-      <section className="mt-8">
-        <h2 className="label">Method</h2>
-        <ol className="mt-3 space-y-3">
+      <section aria-labelledby="method-heading">
+        <div className="flex items-baseline justify-between px-1 pt-1.5 pb-2.5">
+          <h2 id="method-heading" className="text-[22px] font-extrabold">
+            Method
+          </h2>
+          {cooking && total > 0 && (
+            <p className="font-bold text-muted" aria-live="polite">
+              {currentStep < total ? `Step ${currentStep + 1} of ${total}` : "All done"}
+            </p>
+          )}
+        </div>
+        <ol className="flex flex-col gap-2">
           {recipe.steps.map((step, i) => {
-            const key = `s:${i}`;
-            const ticked = done.has(key);
+            const done = cooking && i < currentStep;
+            const now = cooking && i === currentStep;
+            const body = (
+              <>
+                <span
+                  className={`flex h-10 w-10 items-center justify-center rounded-full text-lg font-extrabold ${
+                    now ? "bg-ink text-bg" : done ? "bg-surface-2" : "bg-bg"
+                  }`}
+                  aria-hidden={done}
+                >
+                  {done ? "✓" : i + 1}
+                </span>
+                <span>{step}</span>
+              </>
+            );
+            const cls = `grid w-full grid-cols-[40px_minmax(0,1fr)] gap-3 rounded-[20px] p-4 text-left leading-relaxed transition-colors ${
+              now ? "bg-lemon text-[21px] text-lemon-ink" : `bg-surface text-lg ${done ? "text-done" : ""}`
+            }`;
             return (
               <li key={i}>
-                <button
-                  type="button"
-                  onClick={() => toggle(key)}
-                  className={`flex w-full gap-4 rounded-2xl border border-line bg-surface p-4 text-left leading-relaxed ${big} ${
-                    ticked ? "text-muted opacity-60" : ""
-                  }`}
-                >
-                  <span
-                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full font-semibold ${
-                      ticked ? "bg-ok text-white" : "bg-accent-soft text-accent"
-                    }`}
+                {cooking ? (
+                  <button
+                    type="button"
+                    aria-current={now ? "step" : undefined}
+                    onClick={() => setCurrentStep(now ? i + 1 : i)}
+                    className={cls}
                   >
-                    {ticked ? "✓" : i + 1}
-                  </span>
-                  <span>{step}</span>
-                </button>
+                    {done && <span className="sr-only">Done: </span>}
+                    {body}
+                  </button>
+                ) : (
+                  <div className={cls}>{body}</div>
+                )}
               </li>
             );
           })}
         </ol>
+        {cooking && currentStep < total && (
+          <button
+            type="button"
+            className="btn-primary mt-3 w-full"
+            onClick={() => setCurrentStep((s) => s + 1)}
+          >
+            {currentStep === total - 1 ? "Done" : "Next step"}
+          </button>
+        )}
       </section>
 
       {recipe.notes && (
-        <section className="mt-8">
-          <h2 className="label">Notes</h2>
-          <p className={`mt-2 whitespace-pre-line ${big}`}>{recipe.notes}</p>
+        <section aria-labelledby="notes-heading" className="card p-4">
+          <h2 id="notes-heading" className="text-[22px] font-extrabold">
+            Notes
+          </h2>
+          <p className="mt-2 text-lg whitespace-pre-line">{recipe.notes}</p>
         </section>
       )}
 
       {!cooking && (
-        <footer className="mt-10 border-t border-line pt-5">
-          <p className="text-sm text-muted">
-            Source:{" "}
-            {recipe.sourceUrl ? (
-              <a href={recipe.sourceUrl} target="_blank" rel="noreferrer" className="underline">
-                {recipe.sourceLabel || recipe.sourceUrl}
-              </a>
-            ) : (
-              recipe.sourceLabel || "added by hand"
-            )}
-          </p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Link href={`/recipes/${recipe.id}/edit`} className="btn-ghost">
-              Edit
-            </Link>
-            {hasOriginal && recipe.sources.length > 0 && (
-              <button type="button" className="btn-ghost" onClick={() => setShowOriginal((s) => !s)}>
-                {showOriginal ? "Hide original" : "View original"}
-              </button>
-            )}
+        <footer className="px-1 pt-1">
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+            <p className="text-[15px] text-muted">
+              {recipe.sourceUrl ? (
+                <a href={recipe.sourceUrl} target="_blank" rel="noreferrer" className="underline">
+                  {recipe.sourceLabel || "Original link"}
+                </a>
+              ) : (
+                recipe.sourceLabel || "Added by hand"
+              )}
+            </p>
+            <div className="flex gap-4">
+              {recipe.sources.length > 0 && (
+                <button
+                  type="button"
+                  className="min-h-11 font-bold"
+                  aria-expanded={showOriginal}
+                  onClick={() => setShowOriginal((s) => !s)}
+                >
+                  {showOriginal ? "Hide the original" : "See the original"}
+                </button>
+              )}
+              <Link href={`/recipes/${recipe.id}/edit`} className="flex min-h-11 items-center font-bold">
+                Edit
+              </Link>
+            </div>
           </div>
           {showOriginal && (
-            <div className="mt-4 space-y-3">
+            <div className="mt-3 flex flex-col gap-3">
               {recipe.sources.map((key) => (
                 <a key={key} href={`/api/images/${key}`} target="_blank" rel="noreferrer">
                   {/* eslint-disable-next-line @next/next/no-img-element -- private image route */}
-                  <img
-                    src={`/api/images/${key}`}
-                    alt="Original recipe photo"
-                    className="w-full rounded-2xl border border-line"
-                  />
+                  <img src={`/api/images/${key}`} alt="Original recipe photo" className="w-full rounded-[20px]" />
                 </a>
               ))}
             </div>

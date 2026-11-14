@@ -211,27 +211,27 @@ export function RecipeForm({
             <button
               type="button"
               onClick={() => set("heroImage", null)}
-              className={`h-24 w-32 shrink-0 overflow-hidden rounded-xl border-2 ${
+              className={`h-24 w-32 shrink-0 overflow-hidden rounded-2xl border-4 ${
                 r.heroImage === null ? "border-accent" : "border-transparent"
               }`}
             >
-              <RecipeCover title={r.title || "?"} imageKey={null} />
+              <RecipeCover imageKey={null} />
             </button>
             {coverOptions.map((key) => (
               <button
                 type="button"
                 key={key}
                 onClick={() => set("heroImage", key)}
-                className={`h-24 w-32 shrink-0 overflow-hidden rounded-xl border-2 ${
+                className={`h-24 w-32 shrink-0 overflow-hidden rounded-2xl border-4 ${
                   r.heroImage === key ? "border-accent" : "border-transparent"
                 }`}
               >
-                <RecipeCover title="" imageKey={key} />
+                <RecipeCover imageKey={key} />
               </button>
             ))}
           </div>
           <p className="mt-1 text-xs text-muted">
-            Pick a photo of the food if there is one. Otherwise the coloured card is used.
+            Pick a photo of the food if there is one. It shows at the top of the recipe.
           </p>
         </section>
       )}
@@ -243,7 +243,7 @@ export function RecipeForm({
           </label>
           <input
             id="title"
-            className="input font-serif text-xl"
+            className="input text-xl font-bold"
             value={r.title}
             onChange={(e) => set("title", e.target.value)}
             required
@@ -323,7 +323,7 @@ export function RecipeForm({
       <section>
         <h2 className="label">Ingredients</h2>
         {r.ingredients.length > 0 && (
-          <ul className="divide-y divide-line rounded-2xl border border-line bg-surface">
+          <ul className="card divide-y divide-line">
             {r.ingredients.map((ing, i) => (
               <IngredientRow
                 key={i}
@@ -436,7 +436,7 @@ export function RecipeForm({
       )}
 
       {duplicates && (
-        <div className="rounded-2xl border border-accent bg-accent-soft p-4 text-sm">
+        <div className="rounded-[20px] bg-lemon p-4 text-lemon-ink">
           <p className="font-semibold">You might already have this one:</p>
           <ul className="mt-1 list-disc pl-5">
             {duplicates.map((d) => (
@@ -459,7 +459,7 @@ export function RecipeForm({
       )}
 
       <div
-        className="fixed inset-x-0 bottom-16 z-10 border-t border-line bg-bg/95 px-4 py-3 backdrop-blur sm:bottom-0"
+        className="fixed inset-x-0 bottom-[76px] z-10 bg-bg/95 px-4 py-3 backdrop-blur sm:bottom-0"
       >
         <div className="mx-auto flex max-w-2xl items-center gap-3">
           {error && <p className="flex-1 text-sm text-danger">{error}</p>}

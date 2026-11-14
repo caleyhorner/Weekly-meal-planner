@@ -79,12 +79,12 @@ export function ImportPanel() {
     return (
       <div>
         <div className="mx-auto mb-5 max-w-2xl">
-          <h1 className="font-serif text-3xl font-semibold">Check it over</h1>
+          <h1 className="pt-2 text-3xl font-extrabold">Check it over</h1>
           <p className="mt-1 text-muted">
             Fix anything the AI misread, then save. Tap an ingredient to edit it.
           </p>
           {warning && (
-            <p className="mt-3 rounded-xl bg-accent-soft p-3 text-sm text-accent">{warning}</p>
+            <p className="mt-3 rounded-2xl bg-lemon p-3 text-lemon-ink">{warning}</p>
           )}
         </div>
         <RecipeForm initial={draft} onBack={() => setDraft(null)} />
@@ -96,7 +96,7 @@ export function ImportPanel() {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <h1 className="font-serif text-3xl font-semibold">Add a recipe</h1>
+      <h1 className="pt-2 text-3xl font-extrabold">Add a recipe</h1>
       <p className="mt-1 text-muted">
         Photos of cookbook pages, screenshots, a link or pasted text. Any mix works.
       </p>
@@ -105,7 +105,7 @@ export function ImportPanel() {
         <h2 className="label">Photos or screenshots</h2>
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
           {photos.map((p) => (
-            <div key={p.id} className="relative aspect-[3/4] overflow-hidden rounded-xl border border-line">
+            <div key={p.id} className="relative aspect-[3/4] overflow-hidden rounded-2xl">
               {/* eslint-disable-next-line @next/next/no-img-element -- local preview blob */}
               <img src={p.preview} alt="" className="h-full w-full object-cover" />
               <button
@@ -122,8 +122,8 @@ export function ImportPanel() {
             <button
               type="button"
               onClick={() => fileInput.current?.click()}
-              className={`flex aspect-[3/4] flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed text-sm font-semibold ${
-                askForScreenshot ? "border-accent text-accent" : "border-line text-muted"
+              className={`flex aspect-[3/4] flex-col items-center justify-center gap-1 rounded-2xl border-2 border-dashed bg-surface text-base font-bold ${
+                askForScreenshot ? "border-accent text-accent" : "border-surface-2 text-muted"
               }`}
             >
               <span className="text-3xl leading-none">+</span>
@@ -174,7 +174,7 @@ export function ImportPanel() {
       </section>
 
       {error && (
-        <p role="alert" className="mt-4 rounded-xl border border-danger/40 p-3 text-sm text-danger">
+        <p role="alert" className="mt-4 rounded-2xl bg-surface p-4 text-danger">
           {error}
         </p>
       )}

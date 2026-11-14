@@ -23,7 +23,14 @@ export type RecipeSummary = {
   lastCooked: string | null;
 };
 
-export async function listRecipes(opts: { q?: string; tag?: string }): Promise<RecipeSummary[]> {
+export type RecipeSort = "lately" | "az";
+
+export async function listRecipes(opts: {
+  q?: string;
+  tag?: string;
+  /** "lately": longest since last cooked first, never-cooked last. */
+  sort?: RecipeSort;
+}): Promise<RecipeSummary[]> {
   const where: SQL[] = [];
   const q = opts.q?.trim();
   if (q) {
@@ -51,7 +58,11 @@ export async function listRecipes(opts: { q?: string; tag?: string }): Promise<R
     })
     .from(recipes)
     .where(where.length ? and(...where) : undefined)
-    .orderBy(asc(recipes.title));
+    .orderBy(
+      ...(opts.sort === "az"
+        ? [asc(recipes.title)]
+        : [sql`${lastCooked} asc nulls last`, asc(recipes.title)]),
+    );
 }
 
 export async function listTags(): Promise<string[]> {

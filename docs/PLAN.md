@@ -99,13 +99,9 @@ tick off ingredients and steps.
   shopping list.
 
 ### Migration from the old app
-- Add an **"Export all recipes"** button to the Expo app that writes a JSON file
-  (recipes + ingredients + steps + photos as base64 where the image file still exists),
-  shared via the iOS share sheet.
-- The website gets **Import from old app**: upload the JSON, map to the new schema
-  (ingredients re-split by the AI if needed), review, save.
-- Note: the old app stores `imageUri` as an image-picker cache path, so some photos may
-  no longer exist on the device. Export skips missing files instead of failing.
+- **None.** Recipes in the old app are re-added through the new **Add recipe** flow from
+  the original photos, which also gets them properly extracted (the old app only stored
+  the image).
 
 ---
 
@@ -113,7 +109,7 @@ tick off ingredients and steps.
 
 | Table | Key columns |
 |---|---|
-| `recipes` | id, title, description, servings, prep_min, cook_min, tags text[], notes, steps jsonb, source_type (`book`/`instagram`/`web`/`text`/`legacy`), source_label, source_url, hero_image_path, card_colour, created_at, updated_at |
+| `recipes` | id, title, description, servings, prep_min, cook_min, tags text[], notes, steps jsonb, source_type (`book`/`instagram`/`web`/`text`), source_label, source_url, hero_image_path, card_colour, created_at, updated_at |
 | `recipe_ingredients` | id, recipe_id, position, group_label, raw_text, item, amount numeric null, amount_text, unit, prep_note, category |
 | `recipe_sources` | id, recipe_id, storage_path, kind (`photo`/`screenshot`) |
 | `item_aliases` | alias (pk), item |
@@ -130,7 +126,6 @@ tick off ingredients and steps.
 
 Each step is usable on its own and is deployed before moving on.
 
-0. **Old-app export** (independent, can be done any time before step 6).
 1. **Skeleton**: Next.js app in `web/`, passphrase login, Supabase schema + migrations,
    deploy to Vercel.
 2. **Import pipeline**: input box (link/text/photos), URL fetch + JSON-LD, Claude
@@ -140,8 +135,7 @@ Each step is usable on its own and is deployed before moving on.
    original, cooking mode, search, tags.
 4. **Week planner**: Sat–Fri grid, pick or drag, skip, scaling rule, per-meal override.
 5. **Shopping list**: merge, aliases, staples settings, "already have it" check, Copy.
-6. **Import from old app** on the website.
-7. Move the Expo app to `legacy/` (or delete it) once the migration is done.
+6. **Remove the Expo app** from the repo once the website covers everything it did.
 
 ## Later (not v1)
 - **Send to OpenClaw** button (needs a check of what OpenClaw can receive: a webhook, or a
@@ -151,7 +145,5 @@ Each step is usable on its own and is deployed before moving on.
 - Video-only Instagram recipes.
 
 ## Open questions
-- How is the old app installed on her phone: **Expo Go or TestFlight**? This decides how
-  the export button gets onto it.
 - Confirm Supabase free-tier inactivity pause rules before relying on them.
 - Confirm that pasting the copied text into Telegram works end to end with OpenClaw.

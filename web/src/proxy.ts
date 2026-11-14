@@ -2,7 +2,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/session";
 
 export async function proxy(request: NextRequest) {
-  const ok = await verifySessionToken(request.cookies.get(SESSION_COOKIE)?.value);
+  // A missing SESSION_SECRET counts as "not signed in"; the login page explains what to set.
+  const ok = await verifySessionToken(request.cookies.get(SESSION_COOKIE)?.value).catch(() => false);
   if (ok) return NextResponse.next();
 
   if (request.nextUrl.pathname.startsWith("/api/")) {
@@ -16,5 +17,5 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   // Everything except the login page, Next internals and static icons.
-  matcher: ["/((?!login|_next/static|_next/image|favicon.ico|icon.png|apple-icon.png).*)"],
+  matcher: ["/((?!login|api/health|_next/static|_next/image|favicon.ico|icon.png|apple-icon.png).*)"],
 };

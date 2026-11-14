@@ -11,6 +11,12 @@ import {
 
 export async function login(_prev: { error: string }, formData: FormData) {
   const passphrase = String(formData.get("passphrase") ?? "");
+  if (!process.env.HOUSEHOLD_PASSPHRASE || (process.env.SESSION_SECRET?.length ?? 0) < 32) {
+    return {
+      error:
+        "Sign-in isn't set up yet: HOUSEHOLD_PASSPHRASE and SESSION_SECRET (32+ characters) need adding in Vercel's environment variables.",
+    };
+  }
   if (!passphraseMatches(passphrase)) {
     // Small delay to make guessing slow.
     await new Promise((r) => setTimeout(r, 800));

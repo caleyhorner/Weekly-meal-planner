@@ -15,7 +15,8 @@ export async function GET() {
           ? "TOO SHORT (needs 32+ characters)"
           : "MISSING",
     DATABASE_URL: env("DATABASE_URL") ? "set" : "MISSING",
-    BLOB_READ_WRITE_TOKEN: env("BLOB_READ_WRITE_TOKEN") ? "set" : "MISSING",
+    photo_storage:
+      env("BLOB_READ_WRITE_TOKEN") || env("BLOB_STORE_ID") ? "connected" : "MISSING (connect the Blob store)",
     ANTHROPIC_API_KEY: env("ANTHROPIC_API_KEY") ? "set" : "missing (recipe reading off)",
   };
   try {

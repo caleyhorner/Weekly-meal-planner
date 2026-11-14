@@ -9,7 +9,8 @@ import path from "node:path";
 // On Vercel: Vercel Blob (private). Locally without a Blob token: ./.uploads/
 
 const LOCAL_DIR = path.join(process.cwd(), ".uploads");
-const blobConfigured = () => Boolean(process.env.BLOB_READ_WRITE_TOKEN);
+// Vercel connects a Blob store either with a read-write token or with a store id (OIDC).
+const blobConfigured = () => Boolean(process.env.BLOB_READ_WRITE_TOKEN || process.env.BLOB_STORE_ID);
 
 export function imageUrl(key: string) {
   return `/api/images/${key}`;
@@ -22,6 +23,9 @@ export async function saveImage(data: Buffer, contentType: string): Promise<stri
   if (blobConfigured()) {
     await put(key, data, { access: "private", contentType, addRandomSuffix: false });
   } else {
+    if (process.env.VERCEL) {
+      throw new Error("Photo storage isn't connected. Connect the Blob store to this project in Vercel → Storage.");
+    }
     await mkdir(path.join(LOCAL_DIR, "recipes"), { recursive: true });
     await writeFile(path.join(LOCAL_DIR, key), data);
   }

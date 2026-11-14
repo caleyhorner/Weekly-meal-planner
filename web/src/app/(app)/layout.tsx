@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { NavLinks } from "@/components/nav-links";
 import { TimezoneCookie } from "@/components/timezone-cookie";
 
@@ -15,7 +16,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             Dinners
           </Link>
           <nav className="hidden gap-2 sm:flex">
-            <NavLinks />
+            <Suspense>
+              <NavLinks />
+            </Suspense>
           </nav>
         </div>
       </header>
@@ -24,7 +27,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-4 gap-1.5 bg-bg/95 px-4 pt-2 backdrop-blur sm:hidden"
         style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
       >
-        <NavLinks />
+        <Suspense>
+          <NavLinks />
+        </Suspense>
       </nav>
     </div>
   );

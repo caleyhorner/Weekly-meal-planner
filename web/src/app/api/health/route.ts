@@ -18,9 +18,20 @@ export async function GET() {
     photo_storage:
       env("BLOB_READ_WRITE_TOKEN") || env("BLOB_STORE_ID") ? "connected" : "MISSING (connect the Blob store)",
     ANTHROPIC_API_KEY: env("ANTHROPIC_API_KEY") ? "set" : "missing (recipe reading off)",
+    openclaw:
+      env("OPENCLAW_HOOK_URL") && env("OPENCLAW_HOOK_TOKEN")
+        ? "connected"
+        : "not set up (Send to OpenClaw button hidden)",
   };
+  checks.server_region = process.env.VERCEL_REGION ?? "local";
   try {
+    // Two timed queries: the first may include connecting (and waking the database).
+    let t = performance.now();
     const rows = await db.execute<{ n: number }>(sql`select count(*)::int as n from recipes`);
+    checks.db_first_query_ms = String(Math.round(performance.now() - t));
+    t = performance.now();
+    await db.execute(sql`select 1`);
+    checks.db_round_trip_ms = String(Math.round(performance.now() - t));
     checks.database = `connected, ${rows[0]?.n ?? 0} recipes`;
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);

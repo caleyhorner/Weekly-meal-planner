@@ -5,6 +5,7 @@ import { listRecipes } from "@/lib/recipes";
 import { formatMinutes, relativeDays } from "@/lib/format";
 import { dayName, isIsoDate, shortDate, weekStartFor } from "@/lib/week";
 import { pickRecipeAction } from "../../actions";
+import { PickButton } from "./pick-button";
 
 export default async function PickDinnerPage({ params, searchParams }: PageProps<"/week/[date]/pick">) {
   const { date } = await params;
@@ -53,12 +54,7 @@ export default async function PickDinnerPage({ params, searchParams }: PageProps
             return (
               <li key={r.id}>
                 <form action={pickRecipeAction.bind(null, date, r.id)}>
-                  <button
-                    type="submit"
-                    className={`card flex w-full items-center gap-4 px-4 py-3 text-left transition-colors hover:bg-surface-2 ${
-                      isCurrent ? "ring-2 ring-ink" : ""
-                    }`}
-                  >
+                  <PickButton highlighted={isCurrent}>
                     <span className="min-w-0 flex-1">
                       <span className="block text-lg leading-snug font-bold">{r.title}</span>
                       <span className="mt-0.5 block text-[15px] text-muted">
@@ -74,7 +70,7 @@ export default async function PickDinnerPage({ params, searchParams }: PageProps
                     {time && (
                       <span className="shrink-0 rounded-xl bg-bg px-2.5 py-1.5 text-[15px] font-bold">{time}</span>
                     )}
-                  </button>
+                  </PickButton>
                 </form>
               </li>
             );

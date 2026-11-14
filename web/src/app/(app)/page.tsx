@@ -63,6 +63,8 @@ export default async function WeekPage({ searchParams }: PageProps<"/">) {
           id: r.id,
           title: r.title,
           cooked: relativeDays(r.lastCooked),
+          servings: r.servings,
+          minutes: (r.prepMinutes ?? 0) + (r.cookMinutes ?? 0) || null,
         }))}
       />
     </div>

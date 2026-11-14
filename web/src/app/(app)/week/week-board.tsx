@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useOptimistic, useState, useTransition } from "react";
 import type { PlannedDay } from "@/lib/plan";
 import { formatMinutes } from "@/lib/format";
 import { MULTIPLIERS, autoMultiplier, multiplierLabel, servesLabel } from "@/lib/scaling";
@@ -14,7 +14,60 @@ import {
   skipDayAction,
 } from "./actions";
 
-type SidebarRecipe = { id: string; title: string; cooked: string | null };
+type SidebarRecipe = {
+  id: string;
+  title: string;
+  cooked: string | null;
+  servings: number;
+  minutes: number | null;
+};
+
+/** A change shown on screen straight away, before the server confirms it. */
+type Change =
+  | { type: "plan"; date: string; recipe: SidebarRecipe }
+  | { type: "skip"; date: string }
+  | { type: "clear"; date: string }
+  | { type: "size"; date: string; multiplier: number | null }
+  | { type: "move"; from: string; to: string };
+
+function applyChange(days: PlannedDay[], change: Change, household: number): PlannedDay[] {
+  const set = (date: string, fn: (d: PlannedDay) => PlannedDay) =>
+    days.map((d) => (d.date === date ? fn(d) : d));
+  switch (change.type) {
+    case "plan": {
+      const r = change.recipe;
+      return set(change.date, (d) => ({
+        ...d,
+        status: "recipe",
+        recipe: { id: r.id, title: r.title, servings: r.servings, minutes: r.minutes },
+        chosenMultiplier: null,
+        multiplier: autoMultiplier(r.servings, household),
+      }));
+    }
+    case "skip":
+      return set(change.date, (d) => ({ ...d, status: "skip", recipe: null, chosenMultiplier: null, multiplier: 1 }));
+    case "clear":
+      return set(change.date, (d) => ({ ...d, status: "empty", recipe: null, chosenMultiplier: null, multiplier: 1 }));
+    case "size":
+      return set(change.date, (d) =>
+        d.recipe
+          ? {
+              ...d,
+              chosenMultiplier: change.multiplier,
+              multiplier: change.multiplier ?? autoMultiplier(d.recipe.servings, household),
+            }
+          : d,
+      );
+    case "move": {
+      const a = days.find((d) => d.date === change.from);
+      const b = days.find((d) => d.date === change.to);
+      if (!a || !b) return days;
+      return days.map((d) =>
+        d.date === change.to ? { ...a, date: change.to } : d.date === change.from ? { ...b, date: change.from } : d,
+      );
+    }
+  }
+}
 
 const DRAG_RECIPE = "application/x-dinners-recipe";
 const DRAG_DAY = "application/x-dinners-day";
@@ -23,7 +76,6 @@ function DayCard({
   day,
   today,
   household,
-  pending,
   run,
   onDropRecipe,
   onDropDay,
@@ -31,8 +83,7 @@ function DayCard({
   day: PlannedDay;
   today: string;
   household: number;
-  pending: boolean;
-  run: (fn: () => Promise<unknown>) => void;
+  run: (change: Change, fn: () => Promise<unknown>) => void;
   onDropRecipe: (recipeId: string) => void;
   onDropDay: (from: string) => void;
 }) {
@@ -122,9 +173,10 @@ function DayCard({
                       key={m}
                       type="button"
                       aria-pressed={active}
-                      disabled={pending}
                       onClick={() =>
-                        run(() => setMultiplierAction(day.date, auto ? null : m))
+                        run({ type: "size", date: day.date, multiplier: auto ? null : m }, () =>
+                          setMultiplierAction(day.date, auto ? null : m),
+                        )
                       }
                       className={`flex min-h-14 flex-col items-center justify-center rounded-[14px] border-2 px-1 leading-tight ${
                         active ? "border-ink bg-ink text-bg" : "border-surface-2 bg-surface hover:border-muted"
@@ -149,8 +201,7 @@ function DayCard({
             <button
               type="button"
               className="btn-ghost bg-bg"
-              disabled={pending}
-              onClick={() => run(() => skipDayAction(day.date))}
+              onClick={() => run({ type: "skip", date: day.date }, () => skipDayAction(day.date))}
             >
               Skip
             </button>
@@ -166,8 +217,7 @@ function DayCard({
             <button
               type="button"
               className="btn-ghost bg-bg"
-              disabled={pending}
-              onClick={() => run(() => clearDayAction(day.date))}
+              onClick={() => run({ type: "clear", date: day.date }, () => clearDayAction(day.date))}
             >
               Undo skip
             </button>
@@ -183,8 +233,7 @@ function DayCard({
             <button
               type="button"
               className="btn-ghost bg-bg"
-              disabled={pending}
-              onClick={() => run(() => skipDayAction(day.date))}
+              onClick={() => run({ type: "skip", date: day.date }, () => skipDayAction(day.date))}
             >
               Skip
             </button>
@@ -208,27 +257,37 @@ export function WeekBoard({
 }) {
   const [pending, startTransition] = useTransition();
   const [filter, setFilter] = useState("");
-  const run = (fn: () => Promise<unknown>) => startTransition(async () => void (await fn()));
+  const [shownDays, applyOptimistic] = useOptimistic(days, (state: PlannedDay[], change: Change) =>
+    applyChange(state, change, household),
+  );
+  // Update the screen immediately, then save. If saving fails the screen falls back to the server's view.
+  const run = (change: Change, fn: () => Promise<unknown>) =>
+    startTransition(async () => {
+      applyOptimistic(change);
+      await fn();
+    });
 
   const plannedIds = useMemo(
-    () => new Set(days.map((d) => d.recipe?.id).filter(Boolean)),
-    [days],
+    () => new Set(shownDays.map((d) => d.recipe?.id).filter(Boolean)),
+    [shownDays],
   );
   const shown = recipes.filter((r) => r.title.toLowerCase().includes(filter.trim().toLowerCase()));
 
   return (
     <div className="mt-4 lg:grid lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start lg:gap-6">
       <ol className="flex flex-col gap-3" aria-busy={pending}>
-        {days.map((day) => (
+        {shownDays.map((day) => (
           <DayCard
             key={day.date}
             day={day}
             today={today}
             household={household}
-            pending={pending}
             run={run}
-            onDropRecipe={(id) => run(() => planRecipeAction(day.date, id))}
-            onDropDay={(from) => run(() => moveDayAction(from, day.date))}
+            onDropRecipe={(id) => {
+              const recipe = recipes.find((r) => r.id === id);
+              if (recipe) run({ type: "plan", date: day.date, recipe }, () => planRecipeAction(day.date, id));
+            }}
+            onDropDay={(from) => run({ type: "move", from, to: day.date }, () => moveDayAction(from, day.date))}
           />
         ))}
       </ol>

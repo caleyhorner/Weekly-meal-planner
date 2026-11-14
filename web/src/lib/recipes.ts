@@ -16,6 +16,7 @@ const lastCooked = sql<string | null>`(
 export type RecipeSummary = {
   id: string;
   title: string;
+  servings: number;
   tags: string[];
   heroImageUrl: string | null;
   prepMinutes: number | null;
@@ -50,6 +51,7 @@ export async function listRecipes(opts: {
     .select({
       id: recipes.id,
       title: recipes.title,
+      servings: recipes.servings,
       tags: recipes.tags,
       heroImageUrl: recipes.heroImageUrl,
       prepMinutes: recipes.prepMinutes,

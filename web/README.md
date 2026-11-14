@@ -6,7 +6,9 @@ The household meal planner website. See [`../docs/PLAN.md`](../docs/PLAN.md) for
 recipe page (servings scaling, cooking mode, view original), adding recipes by hand, and
 AI import from photos, links and pasted text with a review screen.
 
-**Next:** week planner, shopping list, staples settings.
+**Also built:** the Saturday–Friday week planner (pick or skip each night, ½/1/2/3 sizing for the household, drag and drop on desktop).
+
+**Next:** shopping list, staples settings.
 
 ## Deploying to Vercel (one-time setup)
 

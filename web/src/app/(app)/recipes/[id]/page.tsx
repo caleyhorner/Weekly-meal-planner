@@ -2,12 +2,14 @@ import { notFound } from "next/navigation";
 import { getRecipe } from "@/lib/recipes";
 import { RecipeView } from "./recipe-view";
 
-export default async function RecipePage({ params }: PageProps<"/recipes/[id]">) {
+export default async function RecipePage({ params, searchParams }: PageProps<"/recipes/[id]">) {
   const { id } = await params;
+  const serves = Number((await searchParams).serves);
   const recipe = await getRecipe(id);
   if (!recipe) notFound();
   return (
     <RecipeView
+      initialServings={Number.isFinite(serves) && serves > 0 && serves <= 60 ? serves : undefined}
       recipe={{
         id: recipe.id,
         title: recipe.title,

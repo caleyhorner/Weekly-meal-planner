@@ -81,7 +81,8 @@ export const planDays = pgTable("plan_days", {
   date: date("date").primaryKey(),
   recipeId: uuid("recipe_id").references(() => recipes.id, { onDelete: "set null" }),
   status: text("status").$type<"recipe" | "skip">().notNull().default("recipe"),
-  servingsOverride: integer("servings_override"),
+  /** Chosen scale for this meal (½, 1, 2 or 3); null = the household rule decides. */
+  multiplier: doublePrecision("multiplier"),
 });
 
 export const shoppingHaveIt = pgTable(

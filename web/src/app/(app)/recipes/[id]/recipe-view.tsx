@@ -87,8 +87,15 @@ function useWakeLock(active: boolean) {
   }, [active]);
 }
 
-export function RecipeView({ recipe }: { recipe: ViewRecipe }) {
-  const [servings, setServings] = useState(recipe.servings);
+export function RecipeView({
+  recipe,
+  initialServings,
+}: {
+  recipe: ViewRecipe;
+  /** Opened from the week plan: start at the size planned for that night. */
+  initialServings?: number;
+}) {
+  const [servings, setServings] = useState(initialServings ?? recipe.servings);
   const [cooking, setCooking] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [gotIt, setGotIt] = useState<Set<string>>(new Set());
@@ -98,8 +105,8 @@ export function RecipeView({ recipe }: { recipe: ViewRecipe }) {
   const factor = servings / recipe.servings;
   const groups = useMemo(() => groupIngredients(recipe.ingredients), [recipe.ingredients]);
   const servingOptions = useMemo(
-    () => [...new Set([2, 4, 6, 8, recipe.servings])].sort((a, b) => a - b),
-    [recipe.servings],
+    () => [...new Set([2, 4, 6, 8, recipe.servings, initialServings ?? recipe.servings])].sort((a, b) => a - b),
+    [recipe.servings, initialServings],
   );
 
   const toggleIngredient = (id: string) =>

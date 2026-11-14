@@ -126,7 +126,7 @@ tick off ingredients and steps.
 ## Build order
 
 Each step is usable on its own and is deployed before moving on.
-Steps 1–3 are built (see `web/README.md`).
+Steps 1–4 are built (see `web/README.md`).
 
 1. **Skeleton**: Next.js app in `web/`, passphrase login, Postgres schema + migrations,
    deploy to Vercel.

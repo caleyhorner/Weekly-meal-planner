@@ -15,6 +15,20 @@
       "when": 1794649246036,
       "tag": "0001_seed",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794651744921,
+      "tag": "0002_drop_servings_override",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1794651745491,
+      "tag": "0003_plan_multiplier",
+      "breakpoints": true
     }
   ]
 }

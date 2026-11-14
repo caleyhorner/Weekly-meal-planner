@@ -21,7 +21,7 @@ export default async function RecipesPage({ searchParams }: PageProps<"/recipes"
   };
 
   return (
-    <div>
+    <div className="mx-auto max-w-3xl">
       <h1 className="pt-2 text-3xl leading-tight font-extrabold">What&apos;s for dinner?</h1>
 
       <form action="/recipes" role="search" className="mt-4">

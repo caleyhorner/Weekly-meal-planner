@@ -38,15 +38,17 @@ function parseNumber(token: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+// Checked in order: the first match wins, so pantry staples such as "chicken stock" or
+// "coconut milk" are caught before the meat and dairy words they contain.
 const CATEGORY_WORDS: [Category, string[]][] = [
+  ["Frozen", ["frozen"]],
+  ["Condiments & Sauces", ["sauce", "mustard", "mayo", "ketchup", "vinegar", "pesto", "tahini", "miso", "paste"]],
+  ["Pantry", ["stock", "broth", "coconut milk", "coconut cream", "flour", "sugar", "rice", "pasta", "noodle", "oil", "tinned", "canned", "lentil", "chickpea", "cannellini", "kidney bean", "black bean", "oats", "honey", "breadcrumb", "pastry"]],
+  ["Spices & Herbs", ["cumin", "paprika", "cinnamon", "turmeric", "oregano", "chilli flakes", "coriander seed", "garam masala", "curry powder", "nutmeg", "bay lea", "dried"]],
   ["Meat & Seafood", ["chicken", "beef", "pork", "lamb", "mince", "bacon", "sausage", "salmon", "fish", "prawn", "tuna", "ham", "chorizo", "steak", "turkey", "pancetta", "prosciutto"]],
   ["Dairy & Eggs", ["egg", "milk", "butter", "cheese", "cream", "yoghurt", "yogurt", "parmesan", "feta", "mozzarella", "ricotta", "halloumi"]],
-  ["Spices & Herbs", ["cumin", "paprika", "cinnamon", "turmeric", "oregano", "chilli flakes", "coriander seed", "garam masala", "curry powder", "nutmeg", "bay lea", "dried"]],
-  ["Condiments & Sauces", ["sauce", "mustard", "mayo", "ketchup", "vinegar", "pesto", "tahini", "miso", "paste"]],
   ["Bakery", ["bread", "bun", "roll", "wrap", "tortilla", "pita", "naan", "baguette", "sourdough"]],
-  ["Frozen", ["frozen"]],
-  ["Pantry", ["flour", "sugar", "rice", "pasta", "noodle", "oil", "stock", "tinned", "canned", "lentil", "chickpea", "bean", "oats", "honey", "coconut milk", "breadcrumb", "pastry"]],
-  ["Produce", ["onion", "garlic", "tomato", "potato", "carrot", "leek", "lemon", "lime", "spinach", "capsicum", "zucchini", "mushroom", "broccoli", "celery", "ginger", "parsley", "coriander", "basil", "mint", "lettuce", "avocado", "apple", "pumpkin", "cucumber", "chilli", "herb"]],
+  ["Produce", ["onion", "garlic", "tomato", "potato", "carrot", "leek", "lemon", "lime", "spinach", "capsicum", "zucchini", "mushroom", "broccoli", "celery", "ginger", "parsley", "coriander", "basil", "mint", "lettuce", "avocado", "apple", "pumpkin", "cucumber", "chilli", "herb", "bean"]],
 ];
 
 export function guessCategory(item: string): Category {

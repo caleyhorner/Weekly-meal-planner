@@ -8,7 +8,9 @@ AI import from photos, links and pasted text with a review screen.
 
 **Also built:** the Saturday–Friday week planner (pick or skip each night, ½/1/2/3 sizing for the household, drag and drop on desktop).
 
-**Next:** shopping list, staples settings.
+**And:** the shopping list (merged across the week's dinners at each night's size, staples left
+off, "already have it" ticks, copy or share for Telegram) and settings for household size,
+staples and "same thing" item names.
 
 ## Deploying to Vercel (one-time setup)
 

@@ -36,3 +36,13 @@ test("no quantity", () => {
   assert.equal(r.amount, null);
   assert.equal(r.item, "salt and pepper");
 });
+
+test("aisle guesses prefer pantry items over the meat or dairy words inside them", async () => {
+  const { guessCategory } = await import("./parse-ingredient");
+  assert.equal(guessCategory("chicken stock"), "Pantry");
+  assert.equal(guessCategory("coconut milk"), "Pantry");
+  assert.equal(guessCategory("chicken thighs"), "Meat & Seafood");
+  assert.equal(guessCategory("green curry paste"), "Condiments & Sauces");
+  assert.equal(guessCategory("green beans"), "Produce");
+  assert.equal(guessCategory("butter"), "Dairy & Eggs");
+});

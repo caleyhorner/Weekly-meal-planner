@@ -5,12 +5,13 @@ import { usePathname } from "next/navigation";
 
 const LINKS = [
   { href: "/", label: "Week", match: (p: string) => p === "/" || p.startsWith("/week") },
+  { href: "/list", label: "List", match: (p: string) => p.startsWith("/list") },
   {
     href: "/recipes",
     label: "Recipes",
     match: (p: string) => p === "/recipes" || /^\/recipes\/(?!new)/.test(p),
   },
-  { href: "/recipes/new", label: "Add recipe", match: (p: string) => p === "/recipes/new" },
+  { href: "/recipes/new", label: "Add", match: (p: string) => p === "/recipes/new" },
 ];
 
 export function NavLinks() {

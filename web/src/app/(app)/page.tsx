@@ -49,6 +49,11 @@ export default async function WeekPage({ searchParams }: PageProps<"/">) {
           : `${planned} planned${skipped ? `, ${skipped} skipped` : ""}, ${open} still to pick.`}{" "}
         Sized for {household}.
       </p>
+      {planned > 0 && (
+        <Link href={`/list?week=${start}`} className="btn-primary mt-3">
+          See the shopping list
+        </Link>
+      )}
 
       <WeekBoard
         days={days}

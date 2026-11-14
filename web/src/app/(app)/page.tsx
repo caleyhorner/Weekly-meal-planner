@@ -1,19 +1,21 @@
 import Link from "next/link";
-import { getWeek, householdToday } from "@/lib/plan";
+import { getWeek, getWeekSnacks, householdToday } from "@/lib/plan";
 import { listRecipes } from "@/lib/recipes";
 import { isIsoDate, weekStartFor } from "@/lib/week";
 import { WeekSwitcher } from "@/components/week-switcher";
 import { relativeDays } from "@/lib/format";
 import { WeekBoard } from "./week/week-board";
+import { SnackList } from "./week/snack-list";
 
 export default async function WeekPage({ searchParams }: PageProps<"/">) {
   const sp = await searchParams;
   const today = await householdToday();
   const thisWeek = weekStartFor(today);
   const start = isIsoDate(sp.week) ? weekStartFor(sp.week) : thisWeek;
-  const [{ days, household }, recipes] = await Promise.all([
+  const [{ days, household }, recipes, snacks] = await Promise.all([
     getWeek(start),
-    listRecipes({ sort: "lately" }),
+    listRecipes({ sort: "lately", kind: "dinner" }),
+    getWeekSnacks(start),
   ]);
 
   const planned = days.filter((d) => d.status === "recipe").length;
@@ -28,11 +30,16 @@ export default async function WeekPage({ searchParams }: PageProps<"/">) {
         {open === 0
           ? `All seven nights sorted${skipped ? `, ${skipped} skipped` : ""}.`
           : `${planned} planned${skipped ? `, ${skipped} skipped` : ""}, ${open} still to pick.`}{" "}
-        Sized for {household}.
+        Sized for {household}.{" "}
+        {snacks.length > 0 && (
+          <a href="#snacks" className="underline">
+            {snacks.length} {snacks.length === 1 ? "snack" : "snacks"} to make.
+          </a>
+        )}
       </p>
-      {planned > 0 && (
+      {(planned > 0 || snacks.length > 0) && (
         <Link href={`/list?week=${start}`} className="btn-primary mt-3">
-          Shopping list for these dinners
+          Shopping list for this week
         </Link>
       )}
 
@@ -49,6 +56,8 @@ export default async function WeekPage({ searchParams }: PageProps<"/">) {
           minutes: (r.prepMinutes ?? 0) + (r.cookMinutes ?? 0) || null,
         }))}
       />
+
+      <SnackList key={`snacks-${start}`} weekStart={start} snacks={snacks} />
     </div>
   );
 }

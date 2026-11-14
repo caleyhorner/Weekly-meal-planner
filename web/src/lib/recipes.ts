@@ -1,21 +1,28 @@
 import "server-only";
 import { and, asc, eq, sql, type SQL } from "drizzle-orm";
 import { db, schema } from "@/db";
-import type { RecipeInput } from "./recipe-model";
+import type { RecipeInput, RecipeKind } from "./recipe-model";
 
-const { recipes, recipeIngredients, recipeSources, planDays } = schema;
+const { recipes, recipeIngredients, recipeSources, planDays, weekSnacks } = schema;
 
 /** Most recent past (or today's) planned date for the recipe. */
 const lastCooked = sql<string | null>`(
-  select max(${planDays.date})::text from ${planDays}
-  where ${planDays.recipeId} = ${recipes.id}
-    and ${planDays.status} = 'recipe'
-    and ${planDays.date} <= current_date
+  select max(d)::text from (
+    select ${planDays.date} as d from ${planDays}
+    where ${planDays.recipeId} = ${recipes.id}
+      and ${planDays.status} = 'recipe'
+      and ${planDays.date} <= current_date
+    union all
+    select ${weekSnacks.weekStart} from ${weekSnacks}
+    where ${weekSnacks.recipeId} = ${recipes.id}
+      and ${weekSnacks.weekStart} <= current_date
+  ) cooked
 )`;
 
 export type RecipeSummary = {
   id: string;
   title: string;
+  kind: RecipeKind;
   servings: number;
   tags: string[];
   heroImageUrl: string | null;
@@ -31,6 +38,7 @@ export async function listRecipes(opts: {
   tag?: string;
   /** "lately": longest since last cooked first, never-cooked last. */
   sort?: RecipeSort;
+  kind?: RecipeKind;
 }): Promise<RecipeSummary[]> {
   const where: SQL[] = [];
   const q = opts.q?.trim();
@@ -46,11 +54,13 @@ export async function listRecipes(opts: {
     )`);
   }
   if (opts.tag) where.push(sql`${opts.tag} = any(${recipes.tags})`);
+  if (opts.kind) where.push(eq(recipes.kind, opts.kind));
 
   return db
     .select({
       id: recipes.id,
       title: recipes.title,
+      kind: recipes.kind,
       servings: recipes.servings,
       tags: recipes.tags,
       heroImageUrl: recipes.heroImageUrl,
@@ -117,6 +127,7 @@ export async function saveRecipe(input: RecipeInput, id?: string): Promise<strin
   return db.transaction(async (tx) => {
     const values = {
       title: input.title,
+      kind: input.kind,
       description: input.description,
       servings: input.servings,
       prepMinutes: input.prepMinutes,

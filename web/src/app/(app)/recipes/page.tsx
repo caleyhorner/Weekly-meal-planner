@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { listRecipes, listTags, type RecipeSort } from "@/lib/recipes";
+import type { RecipeKind } from "@/lib/recipe-model";
 import { formatMinutes, relativeDays } from "@/lib/format";
 
 export default async function RecipesPage({ searchParams }: PageProps<"/recipes">) {
@@ -7,11 +8,14 @@ export default async function RecipesPage({ searchParams }: PageProps<"/recipes"
   const q = typeof sp.q === "string" ? sp.q : "";
   const tag = typeof sp.tag === "string" ? sp.tag : "";
   const sort: RecipeSort = sp.sort === "az" ? "az" : "lately";
-  const [recipes, tags] = await Promise.all([listRecipes({ q, tag, sort }), listTags()]);
+  const kind: RecipeKind | undefined = sp.kind === "dinner" || sp.kind === "snack" ? sp.kind : undefined;
+  const [recipes, tags] = await Promise.all([listRecipes({ q, tag, sort, kind }), listTags()]);
 
-  const href = (changes: { tag?: string; sort?: RecipeSort }) => {
+  const href = (changes: { tag?: string; sort?: RecipeSort; kind?: RecipeKind | "" }) => {
     const params = new URLSearchParams();
     if (q) params.set("q", q);
+    const k = changes.kind ?? kind;
+    if (k) params.set("kind", k);
     const t = changes.tag ?? tag;
     if (t) params.set("tag", t);
     const s = changes.sort ?? sort;
@@ -27,6 +31,7 @@ export default async function RecipesPage({ searchParams }: PageProps<"/recipes"
       <form action="/recipes" role="search" className="mt-4">
         {tag && <input type="hidden" name="tag" value={tag} />}
         {sort !== "lately" && <input type="hidden" name="sort" value={sort} />}
+        {kind && <input type="hidden" name="kind" value={kind} />}
         <label htmlFor="q" className="sr-only">
           Search recipes or ingredients
         </label>
@@ -45,6 +50,30 @@ export default async function RecipesPage({ searchParams }: PageProps<"/recipes"
           />
         </div>
       </form>
+
+      <nav aria-label="Dinners or snacks" className="mt-3 grid grid-cols-3 gap-1 rounded-2xl bg-surface-2 p-1">
+        {(
+          [
+            ["", "All"],
+            ["dinner", "Dinners"],
+            ["snack", "Snacks"],
+          ] as const
+        ).map(([value, label]) => {
+          const active = (kind ?? "") === value;
+          return (
+            <Link
+              key={label}
+              href={href({ kind: value })}
+              aria-current={active ? "page" : undefined}
+              className={`flex h-11 items-center justify-center rounded-xl text-base ${
+                active ? "bg-surface font-bold shadow-sm" : "font-medium"
+              }`}
+            >
+              {label}
+            </Link>
+          );
+        })}
+      </nav>
 
       <div role="group" aria-label="Sort recipes" className="mt-3 grid grid-cols-2 rounded-2xl bg-surface-2 p-1">
         {(
@@ -114,6 +143,7 @@ export default async function RecipesPage({ searchParams }: PageProps<"/recipes"
                   <span className="min-w-0 flex-1">
                     <span className="block text-lg leading-snug font-bold">{r.title}</span>
                     <span className="mt-0.5 block text-[15px] text-muted">
+                      {r.kind === "snack" ? "Snack. " : ""}
                       {cooked ? `Last had ${cooked}` : "Not tried yet"}
                     </span>
                   </span>

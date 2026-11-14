@@ -3,7 +3,16 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireHousehold } from "@/lib/auth";
-import { clearDay, setDayRecipe, setMultiplier, skipDay, swapDays } from "@/lib/plan";
+import {
+  addWeekSnack,
+  clearDay,
+  removeWeekSnack,
+  setDayRecipe,
+  setMultiplier,
+  setSnackMultiplier,
+  skipDay,
+  swapDays,
+} from "@/lib/plan";
 import { MULTIPLIERS } from "@/lib/scaling";
 import { isIsoDate, weekStartFor } from "@/lib/week";
 
@@ -16,6 +25,7 @@ function check(date: string) {
 function done(date: string) {
   revalidatePath("/");
   revalidatePath("/recipes");
+  revalidatePath("/list");
   return weekStartFor(date);
 }
 
@@ -65,4 +75,31 @@ export async function moveDayAction(from: string, to: string) {
   check(to);
   await swapDays(from, to);
   done(from);
+}
+
+// ─── Snacks ──────────────────────────────────────────────────────────────────
+
+export async function addSnackAction(weekStart: string, recipeId: string) {
+  await requireHousehold();
+  check(weekStart);
+  if (!UUID.test(recipeId)) throw new Error("Bad recipe");
+  await addWeekSnack(weekStart, recipeId);
+  redirect(`/?week=${done(weekStart)}#snacks`);
+}
+
+export async function removeSnackAction(id: string) {
+  await requireHousehold();
+  if (!UUID.test(id)) throw new Error("Bad snack");
+  await removeWeekSnack(id);
+  revalidatePath("/");
+  revalidatePath("/list");
+}
+
+export async function setSnackMultiplierAction(id: string, multiplier: number) {
+  await requireHousehold();
+  if (!UUID.test(id)) throw new Error("Bad snack");
+  if (!(MULTIPLIERS as readonly number[]).includes(multiplier)) throw new Error("Bad size");
+  await setSnackMultiplier(id, multiplier);
+  revalidatePath("/");
+  revalidatePath("/list");
 }

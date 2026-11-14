@@ -13,7 +13,7 @@ export default async function PickDinnerPage({ params, searchParams }: PageProps
   const sp = await searchParams;
   const q = typeof sp.q === "string" ? sp.q : "";
   const start = weekStartFor(date);
-  const [recipes, { days }] = await Promise.all([listRecipes({ q, sort: "lately" }), getWeek(start)]);
+  const [recipes, { days }] = await Promise.all([listRecipes({ q, sort: "lately", kind: "dinner" }), getWeek(start)]);
 
   const plannedOn = new Map<string, string>();
   for (const d of days) if (d.recipe) plannedOn.set(d.recipe.id, dayName(d.date));

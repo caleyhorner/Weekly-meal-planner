@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { householdToday } from "@/lib/plan";
 import { getShoppingList } from "@/lib/shopping-data";
+import { openClawConfigured } from "@/lib/openclaw";
 import { addDays, isIsoDate, weekRangeLabel, weekStartFor } from "@/lib/week";
 import { ShoppingList } from "./shopping-list";
 
@@ -39,7 +40,7 @@ export default async function ListPage({ searchParams }: PageProps<"/list">) {
           </Link>
         </div>
       ) : (
-        <ShoppingList weekStart={start} dinners={dinners} items={items} />
+        <ShoppingList weekStart={start} dinners={dinners} items={items} canSendToOpenClaw={openClawConfigured()} />
       )}
 
       <p className="mt-8 text-center">

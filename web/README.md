@@ -29,6 +29,23 @@ staples and "same thing" item names.
 Without `ANTHROPIC_API_KEY` everything works except automatic recipe reading. Recipes can
 still be typed in by hand.
 
+## Send to OpenClaw (optional)
+
+The shopping list can send itself straight to your OpenClaw agent, which adds the items to
+the Groceries list in Apple Reminders. Without this set up, use **Copy for Telegram**.
+
+1. In OpenClaw's config, switch on webhooks with a dedicated token (not the gateway
+   password): `hooks.enabled: true` and `hooks.token: <long random string>`.
+2. Make the gateway's `/hooks` path reachable from the internet. If OpenClaw runs on a home
+   computer, Tailscale Funnel or a Cloudflare Tunnel gives it an HTTPS address. Vercel has to
+   be able to reach it.
+3. In Vercel, add `OPENCLAW_HOOK_URL` (e.g. `https://<machine>.<tailnet>.ts.net/hooks/agent`)
+   and `OPENCLAW_HOOK_TOKEN`, then redeploy. `/api/health` shows `openclaw: connected`.
+
+The button appears on the shopping list once both settings exist. The app sends the list as
+one message to `POST /hooks/agent` with `Authorization: Bearer <token>` and an
+`Idempotency-Key`, so pressing it twice for the same list doesn't add items twice.
+
 ## Local development
 
 ```bash

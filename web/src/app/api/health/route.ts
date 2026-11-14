@@ -18,6 +18,10 @@ export async function GET() {
     photo_storage:
       env("BLOB_READ_WRITE_TOKEN") || env("BLOB_STORE_ID") ? "connected" : "MISSING (connect the Blob store)",
     ANTHROPIC_API_KEY: env("ANTHROPIC_API_KEY") ? "set" : "missing (recipe reading off)",
+    openclaw:
+      env("OPENCLAW_HOOK_URL") && env("OPENCLAW_HOOK_TOKEN")
+        ? "connected"
+        : "not set up (Send to OpenClaw button hidden)",
   };
   try {
     const rows = await db.execute<{ n: number }>(sql`select count(*)::int as n from recipes`);

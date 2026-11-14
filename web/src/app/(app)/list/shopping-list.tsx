@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useSyncExternalStore, useTransition } from "react";
 import { capitalise, groceriesText, type ShoppingItem } from "@/lib/shopping";
-import { addStapleAction, mergeItemsAction, setHaveItAction } from "./actions";
+import { addStapleAction, mergeItemsAction, sendToOpenClawAction, setHaveItAction } from "./actions";
 
 type Item = ShoppingItem & { haveIt: boolean };
 
@@ -64,16 +64,20 @@ export function ShoppingList({
   weekStart,
   dinners,
   items,
+  canSendToOpenClaw,
 }: {
   weekStart: string;
   dinners: number;
   items: Item[];
+  canSendToOpenClaw: boolean;
 }) {
   const [, startTransition] = useTransition();
   // Optimistic "have it" ticks, so tapping feels instant.
   const [have, setHave] = useState<Record<string, boolean>>({});
   const [open, setOpen] = useState<string | null>(null);
   const [copied, setCopied] = useState<"copied" | "failed" | null>(null);
+  const [sending, startSending] = useTransition();
+  const [sent, setSent] = useState<{ ok: boolean; message: string } | null>(null);
   // The share sheet (straight to Telegram) only exists on some browsers, mostly phones.
   const canShare = useSyncExternalStore(
     () => () => {},
@@ -116,6 +120,22 @@ export function ShoppingList({
       setCopied("failed");
     }
     setTimeout(() => setCopied(null), 4000);
+  };
+
+  const sendToOpenClaw = () => {
+    setSent(null);
+    startSending(async () => {
+      try {
+        const res = await sendToOpenClawAction(weekStart);
+        setSent(
+          res.ok
+            ? { ok: true, message: "Sent. OpenClaw is adding it to Groceries in Reminders." }
+            : { ok: false, message: res.error },
+        );
+      } catch {
+        setSent({ ok: false, message: "Couldn't send. Check your connection and try again." });
+      }
+    });
   };
 
   const share = async () => {
@@ -191,14 +211,33 @@ export function ShoppingList({
         aria-label="Send the list"
       >
         <p className="px-1 pb-2 font-bold" aria-live="polite">
-          {copied === "copied"
+          {sending
+            ? "Sending to OpenClaw…"
+            : sent
+              ? sent.message
+              : copied === "copied"
             ? "Copied. Paste it into your Telegram chat with OpenClaw."
             : copied === "failed"
               ? "Couldn't copy automatically. Use Share instead, or select the text below."
-              : `${toBuy.length} ${toBuy.length === 1 ? "thing" : "things"} to buy`}
+                : `${toBuy.length} ${toBuy.length === 1 ? "thing" : "things"} to buy`}
         </p>
+        {canSendToOpenClaw && (
+          <button
+            type="button"
+            className="btn mb-2 w-full bg-lemon text-lemon-ink"
+            onClick={sendToOpenClaw}
+            disabled={!toBuy.length || sending}
+          >
+            {sending ? "Sending…" : "Send to OpenClaw"}
+          </button>
+        )}
         <div className="flex gap-2">
-          <button type="button" className="btn flex-1 bg-lemon text-lemon-ink" onClick={copy} disabled={!toBuy.length}>
+          <button
+            type="button"
+            className={`btn flex-1 ${canSendToOpenClaw ? "bg-surface text-ink" : "bg-lemon text-lemon-ink"}`}
+            onClick={copy}
+            disabled={!toBuy.length}
+          >
             Copy for Telegram
           </button>
           {canShare && (

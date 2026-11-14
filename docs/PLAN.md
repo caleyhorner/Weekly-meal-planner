@@ -13,7 +13,8 @@ This replaces the Expo/React Native iPhone app currently in the repo root.
 ### Platform
 - **Mobile-first website**, works on desktop too. Replaces the Expo app (too finicky).
 - **Next.js (App Router) + TypeScript**, deployed on **Vercel** (free tier).
-- **Supabase** (free tier): Postgres for data, Storage for photos.
+- **Postgres via the Vercel Marketplace (Neon)** for data and **Vercel Blob** for photos,
+  both added from inside the Vercel dashboard (no separate account).
 - **One shared household passphrase**, no per-person accounts. Login sets a signed,
   httpOnly cookie. All database and AI calls happen server-side; no keys in the browser.
 - Reuse from the old app: ingredient parsing, aisle categories, JSON-LD recipe extraction.
@@ -125,8 +126,9 @@ tick off ingredients and steps.
 ## Build order
 
 Each step is usable on its own and is deployed before moving on.
+Steps 1–3 are built (see `web/README.md`).
 
-1. **Skeleton**: Next.js app in `web/`, passphrase login, Supabase schema + migrations,
+1. **Skeleton**: Next.js app in `web/`, passphrase login, Postgres schema + migrations,
    deploy to Vercel.
 2. **Import pipeline**: input box (link/text/photos), URL fetch + JSON-LD, Claude
    extraction to structured output, review/edit screen, save with originals.
@@ -145,5 +147,5 @@ Each step is usable on its own and is deployed before moving on.
 - Video-only Instagram recipes.
 
 ## Open questions
-- Confirm Supabase free-tier inactivity pause rules before relying on them.
+- Confirm current Neon and Vercel Blob free-tier limits.
 - Confirm that pasting the copied text into Telegram works end to end with OpenClaw.

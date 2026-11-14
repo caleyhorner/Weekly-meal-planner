@@ -4,7 +4,7 @@ A shared website (phone + desktop) for planning a week of family dinners and tur
 the plan into a shopping list. Recipes come in from cookbook photos, Instagram, recipe
 sites or pasted text, and are stored in one standard format.
 
-This replaces the Expo/React Native iPhone app currently in the repo root.
+This replaced the earlier Expo/React Native iPhone app, which has been removed.
 
 ---
 
@@ -17,7 +17,6 @@ This replaces the Expo/React Native iPhone app currently in the repo root.
   both added from inside the Vercel dashboard (no separate account).
 - **One shared household passphrase**, no per-person accounts. Login sets a signed,
   httpOnly cookie. All database and AI calls happen server-side; no keys in the browser.
-- Reuse from the old app: ingredient parsing, aisle categories, JSON-LD recipe extraction.
 
 ### Adding recipes
 - One **"Add recipe"** input that accepts any of:
@@ -126,7 +125,7 @@ tick off ingredients and steps.
 ## Build order
 
 Each step is usable on its own and is deployed before moving on.
-Steps 1–5 are built (see `web/README.md`).
+All six steps are done (see `web/README.md`).
 
 1. **Skeleton**: Next.js app in `web/`, passphrase login, Postgres schema + migrations,
    deploy to Vercel.
@@ -137,7 +136,7 @@ Steps 1–5 are built (see `web/README.md`).
    original, cooking mode, search, tags.
 4. **Week planner**: Sat–Fri grid, pick or drag, skip, scaling rule, per-meal override.
 5. **Shopping list**: merge, aliases, staples settings, "already have it" check, Copy.
-6. **Remove the Expo app** from the repo once the website covers everything it did.
+6. ~~**Remove the Expo app**~~ (done).
 
 ## Later (not v1)
 - **Send to OpenClaw** button (needs a check of what OpenClaw can receive: a webhook, or a

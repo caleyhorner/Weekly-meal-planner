@@ -114,7 +114,8 @@ export async function readRecipe({
     sourceLabel: extracted.source_label || siteName,
     sourceUrl,
     sourceImages,
-    heroImage,
+    // Start with a picture: the website's food photo, else the first photo it came from.
+    heroImage: heroImage ?? sourceImages[0] ?? null,
   };
   return { ok: true, draft, warning: warning ?? (extracted.problem || null) };
 }

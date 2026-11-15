@@ -6,6 +6,8 @@ import type { RecipeInput, RecipeKind } from "./recipe-model";
 const { recipes, recipeIngredients, recipeSources, planDays, weekSnacks } = schema;
 
 /** Most recent past (or today's) planned date for the recipe. */
+// Outer columns are written out in full ("recipes"."id"): inside a subquery Drizzle prints a
+// bare "id", which Postgres would read as the subquery's own id column.
 const lastCooked = sql<string | null>`(
   select max(d)::text from (
     select ${planDays.date} as d from ${planDays}
@@ -18,15 +20,6 @@ const lastCooked = sql<string | null>`(
       and ${weekSnacks.weekStart} <= current_date
   ) cooked
 )`;
-
-/** Picture for lists: the chosen cover, else the first photo it was imported from. */
-// Columns from the outer "recipes" row are written out in full: inside these subqueries
-// Drizzle would print a bare "id", which Postgres would read as the subquery's own id.
-const thumb = sql<string | null>`coalesce("recipes"."hero_image_url", (
-  select ${recipeSources.url} from ${recipeSources}
-  where ${recipeSources.recipeId} = "recipes"."id"
-  order by ${recipeSources.position} limit 1
-))`;
 
 export type RecipeSummary = {
   id: string;
@@ -78,7 +71,7 @@ export async function listRecipes(opts: {
       servings: recipes.servings,
       tags: recipes.tags,
       heroImageUrl: recipes.heroImageUrl,
-      thumb,
+      thumb: recipes.heroImageUrl,
       prepMinutes: recipes.prepMinutes,
       cookMinutes: recipes.cookMinutes,
       lastCooked,

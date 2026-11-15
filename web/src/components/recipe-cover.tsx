@@ -13,7 +13,7 @@ export function RecipeCover({ imageKey, className = "" }: { imageKey: string | n
   }
   return (
     <div className={`flex h-full w-full items-center justify-center bg-surface-2 text-sm font-bold text-muted ${className}`}>
-      No photo
+      No picture
     </div>
   );
 }

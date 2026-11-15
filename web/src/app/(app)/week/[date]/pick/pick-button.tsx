@@ -9,7 +9,7 @@ export function PickButton({ highlighted, children }: { highlighted: boolean; ch
     <button
       type="submit"
       disabled={pending}
-      className={`card flex w-full items-center gap-4 px-4 py-3 text-left transition-colors hover:bg-surface-2 ${
+      className={`card flex w-full items-center gap-3 px-3 py-3 text-left transition-colors hover:bg-surface-2 ${
         highlighted ? "ring-2 ring-ink" : ""
       } ${pending ? "bg-lemon text-lemon-ink" : ""}`}
     >

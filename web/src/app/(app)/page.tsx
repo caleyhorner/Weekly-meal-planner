@@ -51,6 +51,7 @@ export default async function WeekPage({ searchParams }: PageProps<"/">) {
         recipes={recipes.map((r) => ({
           id: r.id,
           title: r.title,
+          thumb: r.thumb,
           cooked: relativeDays(r.lastCooked),
           servings: r.servings,
           minutes: (r.prepMinutes ?? 0) + (r.cookMinutes ?? 0) || null,

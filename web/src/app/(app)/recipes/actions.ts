@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireHousehold } from "@/lib/auth";
+import { saveImage } from "@/lib/storage";
 import { recipeInputSchema, type RecipeInput } from "@/lib/recipe-model";
 import { deleteRecipe, findSimilarTitles, markChecked, saveRecipe } from "@/lib/recipes";
 
@@ -37,4 +38,17 @@ export async function markCheckedAction(id: string) {
   await markChecked(id);
   revalidatePath("/recipes");
   revalidatePath(`/recipes/${id}`);
+}
+
+/** Stores a photo chosen as a recipe's picture and returns its key. */
+export async function uploadPictureAction(formData: FormData): Promise<{ key: string } | { error: string }> {
+  await requireHousehold();
+  const photo = formData.get("photo");
+  if (!(photo instanceof File) || photo.size === 0) return { error: "No photo received." };
+  if (!["image/jpeg", "image/png", "image/webp"].includes(photo.type)) {
+    return { error: "Photos need to be JPEG, PNG or WebP." };
+  }
+  if (photo.size > 4_000_000) return { error: "That photo is too large." };
+  const key = await saveImage(Buffer.from(await photo.arrayBuffer()), photo.type);
+  return { key };
 }

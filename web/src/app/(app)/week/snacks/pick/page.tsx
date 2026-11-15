@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { RecipeThumb } from "@/components/recipe-thumb";
 import { getWeekSnacks, householdToday } from "@/lib/plan";
 import { listRecipes } from "@/lib/recipes";
 import { formatMinutes, relativeDays } from "@/lib/format";
@@ -50,6 +51,7 @@ export default async function PickSnackPage({ searchParams }: PageProps<"/week/s
               <li key={r.id}>
                 <form action={addSnackAction.bind(null, start, r.id)}>
                   <PickButton highlighted={false}>
+                    <RecipeThumb imageKey={r.thumb} title={r.title} />
                     <span className="min-w-0 flex-1">
                       <span className="block text-lg leading-snug font-bold">{r.title}</span>
                       <span className="mt-0.5 block text-[15px] text-muted">

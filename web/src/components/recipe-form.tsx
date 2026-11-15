@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import {
   CATEGORIES,
@@ -12,10 +12,12 @@ import {
 import { parseIngredientLine } from "@/lib/parse-ingredient";
 import { formatQuantity } from "@/lib/format";
 import { RecipeCover } from "./recipe-cover";
+import { resizeImage } from "@/lib/resize-image";
 import {
   deleteRecipeAction,
   saveRecipeAction,
   similarTitlesAction,
+  uploadPictureAction,
 } from "@/app/(app)/recipes/actions";
 
 function numOrNull(v: string): number | null {
@@ -142,10 +144,34 @@ export function RecipeForm({
   const [error, setError] = useState("");
   const [duplicates, setDuplicates] = useState<{ id: string; title: string }[] | null>(null);
   const [pending, startTransition] = useTransition();
-  // Cover choices: the original photos plus any food photo the website provided.
-  const [coverOptions] = useState(() =>
+  // Picture choices: the chosen picture, the photos it was imported from, and any added here.
+  const [pictureOptions, setPictureOptions] = useState(() =>
     [...new Set([initial.heroImage, ...initial.sourceImages].filter((k): k is string => !!k))],
   );
+  const [uploading, setUploading] = useState(false);
+  const [pictureError, setPictureError] = useState("");
+  const pictureInput = useRef<HTMLInputElement>(null);
+
+  const addPicture = async (file: File | undefined) => {
+    if (!file) return;
+    setPictureError("");
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.set("photo", await resizeImage(file), "picture.jpg");
+      const res = await uploadPictureAction(fd);
+      if ("error" in res) setPictureError(res.error);
+      else {
+        setPictureOptions((all) => [res.key, ...all]);
+        set("heroImage", res.key);
+      }
+    } catch {
+      setPictureError("That photo couldn't be added. Try another, or a JPEG instead of HEIC.");
+    } finally {
+      setUploading(false);
+      if (pictureInput.current) pictureInput.current.value = "";
+    }
+  };
 
   const set = <K extends keyof RecipeInput>(key: K, value: RecipeInput[K]) =>
     setR((prev) => ({ ...prev, [key]: value }));
@@ -204,37 +230,59 @@ export function RecipeForm({
         ))}
       </datalist>
 
-      {coverOptions.length > 0 && (
-        <section>
-          <h2 className="label">Cover</h2>
-          <div className="flex gap-2 overflow-x-auto pb-1">
+      <section aria-labelledby="picture-heading">
+        <h2 id="picture-heading" className="label">
+          Picture
+        </h2>
+        <div className="flex gap-2 overflow-x-auto pb-1" role="radiogroup" aria-labelledby="picture-heading">
+          <button
+            type="button"
+            role="radio"
+            aria-checked={r.heroImage === null}
+            onClick={() => set("heroImage", null)}
+            className={`h-24 w-24 shrink-0 overflow-hidden rounded-2xl border-4 ${
+              r.heroImage === null ? "border-accent" : "border-transparent"
+            }`}
+          >
+            <RecipeCover imageKey={null} />
+          </button>
+          {pictureOptions.map((key) => (
             <button
               type="button"
-              onClick={() => set("heroImage", null)}
-              className={`h-24 w-32 shrink-0 overflow-hidden rounded-2xl border-4 ${
-                r.heroImage === null ? "border-accent" : "border-transparent"
+              key={key}
+              role="radio"
+              aria-checked={r.heroImage === key}
+              aria-label="Use this photo"
+              onClick={() => set("heroImage", key)}
+              className={`h-24 w-24 shrink-0 overflow-hidden rounded-2xl border-4 ${
+                r.heroImage === key ? "border-accent" : "border-transparent"
               }`}
             >
-              <RecipeCover imageKey={null} />
+              <RecipeCover imageKey={key} />
             </button>
-            {coverOptions.map((key) => (
-              <button
-                type="button"
-                key={key}
-                onClick={() => set("heroImage", key)}
-                className={`h-24 w-32 shrink-0 overflow-hidden rounded-2xl border-4 ${
-                  r.heroImage === key ? "border-accent" : "border-transparent"
-                }`}
-              >
-                <RecipeCover imageKey={key} />
-              </button>
-            ))}
-          </div>
-          <p className="mt-1 text-xs text-muted">
-            Pick a photo of the food if there is one. It shows at the top of the recipe.
-          </p>
-        </section>
-      )}
+          ))}
+          <button
+            type="button"
+            onClick={() => pictureInput.current?.click()}
+            disabled={uploading}
+            className="flex h-24 w-24 shrink-0 flex-col items-center justify-center gap-1 rounded-2xl border-2 border-dashed border-surface-2 bg-surface text-sm font-bold text-muted"
+          >
+            <span className="text-2xl leading-none">+</span>
+            {uploading ? "Adding…" : "Add a photo"}
+          </button>
+          <input
+            ref={pictureInput}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => addPicture(e.target.files?.[0])}
+          />
+        </div>
+        <p className="mt-1 text-xs text-muted">
+          Shown at the top of the recipe and next to it in lists. A photo of the finished dish works best.
+        </p>
+        {pictureError && <p className="mt-1 text-sm text-danger">{pictureError}</p>}
+      </section>
 
       <section className="space-y-3">
         <div>

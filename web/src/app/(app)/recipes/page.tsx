@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { RecipeThumb } from "@/components/recipe-thumb";
 import { countToCheck, listRecipes, listTags, type RecipeSort } from "@/lib/recipes";
 import type { RecipeKind } from "@/lib/recipe-model";
 import { formatMinutes, relativeDays } from "@/lib/format";
@@ -165,9 +166,10 @@ export default async function RecipesPage({ searchParams }: PageProps<"/recipes"
               <li key={r.id}>
                 <Link
                   href={`/recipes/${r.id}`}
-                  className="card flex items-center gap-4 px-4 py-3 transition-colors hover:bg-surface-2"
+                  className="card flex items-center gap-3 px-3 py-3 transition-colors hover:bg-surface-2"
                 >
-                  <span className="min-w-0 flex-1">
+                  <RecipeThumb imageKey={r.thumb} title={r.title} />
+                    <span className="min-w-0 flex-1">
                     <span className="block text-lg leading-snug font-bold">{r.title}</span>
                     <span className="mt-0.5 block text-[15px] text-muted">
                       {r.needsReview ? "To check. " : ""}

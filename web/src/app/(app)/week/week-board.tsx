@@ -6,6 +6,7 @@ import type { PlannedDay } from "@/lib/plan";
 import { formatMinutes } from "@/lib/format";
 import { MULTIPLIERS, autoMultiplier, multiplierLabel, servesLabel } from "@/lib/scaling";
 import { dayName, shortDate } from "@/lib/week";
+import { RecipeThumb } from "@/components/recipe-thumb";
 import {
   clearDayAction,
   moveDayAction,
@@ -17,6 +18,7 @@ import {
 type SidebarRecipe = {
   id: string;
   title: string;
+  thumb: string | null;
   cooked: string | null;
   servings: number;
   minutes: number | null;
@@ -316,11 +318,14 @@ export function WeekBoard({
                 e.dataTransfer.setData(DRAG_RECIPE, r.id);
                 e.dataTransfer.effectAllowed = "copy";
               }}
-              className="cursor-grab rounded-xl bg-bg px-3 py-2 active:cursor-grabbing"
+              className="flex cursor-grab items-center gap-3 rounded-xl bg-bg px-2 py-2 active:cursor-grabbing"
             >
+              <RecipeThumb imageKey={r.thumb} title={r.title} size={40} />
+              <span className="min-w-0">
               <span className="block font-bold">{r.title}</span>
               <span className="block text-sm text-muted">
                 {plannedIds.has(r.id) ? "Planned this week" : r.cooked ? `Last had ${r.cooked}` : "Not tried yet"}
+              </span>
               </span>
             </li>
           ))}

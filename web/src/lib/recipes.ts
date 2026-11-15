@@ -9,15 +9,24 @@ const { recipes, recipeIngredients, recipeSources, planDays, weekSnacks } = sche
 const lastCooked = sql<string | null>`(
   select max(d)::text from (
     select ${planDays.date} as d from ${planDays}
-    where ${planDays.recipeId} = ${recipes.id}
+    where ${planDays.recipeId} = "recipes"."id"
       and ${planDays.status} = 'recipe'
       and ${planDays.date} <= current_date
     union all
     select ${weekSnacks.weekStart} from ${weekSnacks}
-    where ${weekSnacks.recipeId} = ${recipes.id}
+    where ${weekSnacks.recipeId} = "recipes"."id"
       and ${weekSnacks.weekStart} <= current_date
   ) cooked
 )`;
+
+/** Picture for lists: the chosen cover, else the first photo it was imported from. */
+// Columns from the outer "recipes" row are written out in full: inside these subqueries
+// Drizzle would print a bare "id", which Postgres would read as the subquery's own id.
+const thumb = sql<string | null>`coalesce("recipes"."hero_image_url", (
+  select ${recipeSources.url} from ${recipeSources}
+  where ${recipeSources.recipeId} = "recipes"."id"
+  order by ${recipeSources.position} limit 1
+))`;
 
 export type RecipeSummary = {
   id: string;
@@ -27,6 +36,7 @@ export type RecipeSummary = {
   servings: number;
   tags: string[];
   heroImageUrl: string | null;
+  thumb: string | null;
   prepMinutes: number | null;
   cookMinutes: number | null;
   lastCooked: string | null;
@@ -50,7 +60,7 @@ export async function listRecipes(opts: {
       ${recipes.title} ilike ${like}
       or exists (
         select 1 from ${recipeIngredients}
-        where ${recipeIngredients.recipeId} = ${recipes.id}
+        where ${recipeIngredients.recipeId} = "recipes"."id"
           and ${recipeIngredients.item} ilike ${like}
       )
     )`);
@@ -68,6 +78,7 @@ export async function listRecipes(opts: {
       servings: recipes.servings,
       tags: recipes.tags,
       heroImageUrl: recipes.heroImageUrl,
+      thumb,
       prepMinutes: recipes.prepMinutes,
       cookMinutes: recipes.cookMinutes,
       lastCooked,

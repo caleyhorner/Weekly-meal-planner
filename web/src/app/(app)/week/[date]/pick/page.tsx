@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { RecipeThumb } from "@/components/recipe-thumb";
 import { notFound } from "next/navigation";
 import { getWeek } from "@/lib/plan";
 import { listRecipes } from "@/lib/recipes";
@@ -55,6 +56,7 @@ export default async function PickDinnerPage({ params, searchParams }: PageProps
               <li key={r.id}>
                 <form action={pickRecipeAction.bind(null, date, r.id)}>
                   <PickButton highlighted={isCurrent}>
+                    <RecipeThumb imageKey={r.thumb} title={r.title} />
                     <span className="min-w-0 flex-1">
                       <span className="block text-lg leading-snug font-bold">{r.title}</span>
                       <span className="mt-0.5 block text-[15px] text-muted">

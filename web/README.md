@@ -29,6 +29,18 @@ staples and "same thing" item names.
 Without `ANTHROPIC_API_KEY` everything works except automatic recipe reading. Recipes can
 still be typed in by hand.
 
+## Recipe feed ("For you")
+
+The Recipes page shows suggestions from recipe websites listed in **Settings → Recipe websites**
+(it starts with RecipeTin Eats and Jamie Oliver). Each site is checked every morning by a Vercel
+cron job (`vercel.json`, `/api/cron/feed`, 18:00 UTC ≈ 5am in eastern Australia); **Check now** in
+Settings runs it on demand. Suggestions are ranked without AI, by how alike they are to recipes you
+cook and how many ingredients they share with this week's shopping list. Saving one uses the normal
+AI import and marks it "To check".
+
+Optional: set `CRON_SECRET` (any random string) in Vercel's environment variables. Vercel then sends
+it with the daily call and the endpoint refuses anything else.
+
 ## Send to OpenClaw (optional)
 
 The shopping list can send itself straight to your OpenClaw agent, which adds the items to

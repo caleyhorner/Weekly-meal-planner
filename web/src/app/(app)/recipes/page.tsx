@@ -1,8 +1,34 @@
 import Link from "next/link";
+import { getFeed } from "@/lib/feed/data";
+import { getWeek, householdToday } from "@/lib/plan";
+import { addDays, dayName, shortDate, weekStartFor } from "@/lib/week";
+import { ForYou, type PlanDay } from "./for-you";
 import { RecipeThumb } from "@/components/recipe-thumb";
 import { countToCheck, listRecipes, listTags, type RecipeSort } from "@/lib/recipes";
 import type { RecipeKind } from "@/lib/recipe-model";
 import { formatMinutes, relativeDays } from "@/lib/format";
+
+// Saving a suggestion reads the recipe with the AI, which can take a little while.
+export const maxDuration = 120;
+
+/** Suggestions plus the next fortnight's nights for "Plan it". */
+async function loadFeed() {
+  const today = await householdToday();
+  const thisWeek = weekStartFor(today);
+  const [{ suggestions, sources }, a, b] = await Promise.all([
+    getFeed(10),
+    getWeek(thisWeek),
+    getWeek(addDays(thisWeek, 7)),
+  ]);
+  const days: PlanDay[] = [...a.days, ...b.days]
+    .filter((d) => d.date >= today)
+    .map((d) => ({
+      date: d.date,
+      label: `${dayName(d.date).slice(0, 3)} ${shortDate(d.date)}`,
+      planned: d.recipe?.title ?? (d.status === "skip" ? "skipped" : null),
+    }));
+  return { suggestions, sources, days };
+}
 
 export default async function RecipesPage({ searchParams }: PageProps<"/recipes">) {
   const sp = await searchParams;
@@ -11,10 +37,13 @@ export default async function RecipesPage({ searchParams }: PageProps<"/recipes"
   const sort: RecipeSort = sp.sort === "az" ? "az" : "lately";
   const kind: RecipeKind | undefined = sp.kind === "dinner" || sp.kind === "snack" ? sp.kind : undefined;
   const toCheck = sp.check === "1";
-  const [recipes, tags, checkCount] = await Promise.all([
+  // "For you" suggestions show on the plain library view, not while searching or filtering.
+  const showFeed = !q && !tag && !toCheck && kind !== "snack";
+  const [recipes, tags, checkCount, feed] = await Promise.all([
     listRecipes({ q, tag, sort, kind, toCheck }),
     listTags(),
     countToCheck(),
+    showFeed ? loadFeed() : null,
   ]);
 
   const href = (changes: { tag?: string; sort?: RecipeSort; kind?: RecipeKind | "" }) => {
@@ -54,6 +83,8 @@ export default async function RecipesPage({ searchParams }: PageProps<"/recipes"
           </Link>
         )
       )}
+
+      {feed && <ForYou suggestions={feed.suggestions} days={feed.days} sources={feed.sources} />}
 
       <form action="/recipes" role="search" className="mt-4">
         {tag && <input type="hidden" name="tag" value={tag} />}

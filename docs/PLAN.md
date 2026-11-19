@@ -138,6 +138,22 @@ All six steps are done (see `web/README.md`).
 5. **Shopping list**: merge, aliases, staples settings, "already have it" check, Copy.
 6. ~~**Remove the Expo app**~~ (done).
 
+## Recipe feed ("For you")
+
+Agreed later: suggestions based on (a) the household's taste and (b) using up this week's shopping.
+
+- **Sources:** recipe websites chosen in Settings (start: RecipeTin Eats, Jamie Oliver). Each site's
+  RSS/Atom feed and sitemap are found automatically; new recipe pages are read for their
+  schema.org data (title, picture, ingredients, time).
+- **When:** checked daily (Vercel cron) plus **Check now** in Settings.
+- **Ranking (no AI, free):** similarity to saved recipes, weighted by how often they're cooked, plus
+  ingredients already on this week's list; new posts get a nudge; anything like a "Not for us"
+  suggestion is pushed well down. Each card says why ("Like your …", "Uses leek and cream from
+  this week's list").
+- **Where:** a "For you" row at the top of the Recipes page, 10 at a time.
+- **Actions:** **Save** (AI import, marked "To check"), **Plan it** (save and put on a night, or that
+  week's snacks), **Not for us**. Tapping the card opens the original page.
+
 ## Later (not v1)
 - **Send to OpenClaw** button (needs a check of what OpenClaw can receive: a webhook, or a
   Telegram bot posting into the chat).

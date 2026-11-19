@@ -118,3 +118,42 @@ export const shoppingHaveIt = pgTable(
 
 export type Recipe = typeof recipes.$inferSelect;
 export type RecipeIngredient = typeof recipeIngredients.$inferSelect;
+
+// ─── Recipe feed ("For you") ─────────────────────────────────────────────────
+
+/** Recipe websites the household follows. */
+export const feedSources = pgTable("feed_sources", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  siteUrl: text("site_url").notNull().unique(),
+  /** RSS/Atom feed of new posts, found automatically. */
+  feedUrl: text("feed_url"),
+  /** Sitemap listing recipe pages, used when there is no feed (and to fill the feed at first). */
+  sitemapUrl: text("sitemap_url"),
+  lastCheckedAt: timestamp("last_checked_at", { withTimezone: true }),
+  lastError: text("last_error"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** Recipes found on those websites, waiting to be suggested. */
+export const feedCandidates = pgTable(
+  "feed_candidates",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    sourceId: uuid("source_id")
+      .notNull()
+      .references(() => feedSources.id, { onDelete: "cascade" }),
+    url: text("url").notNull().unique(),
+    title: text("title").notNull(),
+    imageUrl: text("image_url"),
+    /** Ingredient lines exactly as the website lists them. */
+    ingredients: text("ingredients").array().notNull().default([]),
+    keywords: text("keywords").array().notNull().default([]),
+    totalMinutes: integer("total_minutes"),
+    publishedAt: timestamp("published_at", { withTimezone: true }),
+    /** new = can be suggested; saved = imported; dismissed = "Not for us"; skipped = page wasn't a recipe. */
+    status: text("status").$type<"new" | "saved" | "dismissed" | "skipped">().notNull().default("new"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("feed_candidates_status_idx").on(t.status)],
+);

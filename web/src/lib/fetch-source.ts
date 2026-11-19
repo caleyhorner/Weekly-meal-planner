@@ -9,7 +9,7 @@ export type FetchedSource =
 
 const MAX_TEXT = 40_000;
 
-function decodeEntities(s: string) {
+export function decodeEntities(s: string) {
   return s
     .replace(/&amp;/g, "&")
     .replace(/&quot;/g, '"')
@@ -20,7 +20,7 @@ function decodeEntities(s: string) {
     .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n)));
 }
 
-function meta(html: string, prop: string): string | null {
+export function meta(html: string, prop: string): string | null {
   const re = new RegExp(
     `<meta[^>]+(?:property|name)=["']${prop}["'][^>]*content=["']([^"']*)["']|<meta[^>]+content=["']([^"']*)["'][^>]*(?:property|name)=["']${prop}["']`,
     "i",
@@ -30,7 +30,7 @@ function meta(html: string, prop: string): string | null {
   return v ? decodeEntities(v) : null;
 }
 
-function findRecipeJsonLd(html: string): unknown | null {
+export function findRecipeJsonLd(html: string): unknown | null {
   const re = /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
   let m: RegExpExecArray | null;
   while ((m = re.exec(html))) {
@@ -54,7 +54,7 @@ function findRecipeJsonLd(html: string): unknown | null {
   return null;
 }
 
-function jsonLdImage(recipe: Record<string, unknown>): string | null {
+export function jsonLdImage(recipe: Record<string, unknown>): string | null {
   const img = recipe.image;
   if (typeof img === "string") return img;
   if (Array.isArray(img)) {

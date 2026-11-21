@@ -157,3 +157,45 @@ export const feedCandidates = pgTable(
   },
   (t) => [index("feed_candidates_status_idx").on(t.status)],
 );
+
+// ─── Dinner parties ──────────────────────────────────────────────────────────
+
+/** A dinner party being planned: its own menu and shopping list, separate from the week. */
+export const dinnerParties = pgTable("dinner_parties", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  /** The day of the party, if decided. */
+  date: date("date"),
+  /** Everyone eating, hosts included. Each dish is sized to feed this many. */
+  guests: integer("guests").notNull().default(8),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const partyDishes = pgTable(
+  "party_dishes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    partyId: uuid("party_id")
+      .notNull()
+      .references(() => dinnerParties.id, { onDelete: "cascade" }),
+    recipeId: uuid("recipe_id")
+      .notNull()
+      .references(() => recipes.id, { onDelete: "cascade" }),
+    /** Chosen scale; null = sized to feed every guest. */
+    multiplier: doublePrecision("multiplier"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("party_dishes_party_idx").on(t.partyId)],
+);
+
+/** "Already have it" ticks on a party's shopping list. */
+export const partyHaveIt = pgTable(
+  "party_have_it",
+  {
+    partyId: uuid("party_id")
+      .notNull()
+      .references(() => dinnerParties.id, { onDelete: "cascade" }),
+    item: text("item").notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.partyId, t.item] })],
+);

@@ -18,6 +18,8 @@ import { isIsoDate } from "@/lib/week";
 function refresh() {
   revalidatePath("/list");
   revalidatePath("/settings");
+  // Staples and "same thing" merges apply to dinner party lists too.
+  revalidatePath("/parties", "layout");
 }
 
 function checkItem(item: string) {

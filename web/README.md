@@ -41,6 +41,15 @@ AI import and marks it "To check".
 Optional: set `CRON_SECRET` (any random string) in Vercel's environment variables. Vercel then sends
 it with the daily call and the endpoint refuses anything else.
 
+## Dinner parties
+
+**Parties** (in the bottom bar) plans meals for an occasion, separate from the week. Give the
+party a name, a date if you know it, and how many people are eating, then add as many dishes
+as you like. Each dish is sized to feed everyone with the same ½ / 1 / 2 / 3 rule as the
+week (bigger if a small recipe needs it), and any dish can be made more or less by hand. Each
+party has its own shopping list: merged amounts, staples left off, "already have it" ticks,
+Copy for Telegram and Send to OpenClaw, as for the week.
+
 ## Find a better picture
 
 When a recipe's picture is just the cookbook page or screenshot it came from, the recipe page

@@ -15,13 +15,14 @@ export function openClawConfigured(): boolean {
 
 export type SendResult = { ok: true } | { ok: false; error: string };
 
-export async function sendToOpenClaw(groceries: string, weekStart: string): Promise<SendResult> {
+/** `listKey` names the list (a week, or a party), so re-sending the same list is ignored. */
+export async function sendToOpenClaw(groceries: string, listKey: string): Promise<SendResult> {
   const url = process.env.OPENCLAW_HOOK_URL;
   const token = process.env.OPENCLAW_HOOK_TOKEN;
   if (!url || !token) return { ok: false, error: "OpenClaw isn't connected yet." };
 
   // Same list for the same week = same key, so pressing twice doesn't add everything twice.
-  const idempotencyKey = createHash("sha256").update(`${weekStart}\n${groceries}`).digest("hex").slice(0, 32);
+  const idempotencyKey = createHash("sha256").update(`${listKey}\n${groceries}`).digest("hex").slice(0, 32);
 
   let res: Response;
   try {

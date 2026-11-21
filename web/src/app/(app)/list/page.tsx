@@ -4,7 +4,8 @@ import { getShoppingList } from "@/lib/shopping-data";
 import { openClawConfigured } from "@/lib/openclaw";
 import { isIsoDate, weekStartFor } from "@/lib/week";
 import { WeekSwitcher } from "@/components/week-switcher";
-import { ShoppingList } from "./shopping-list";
+import { ShoppingList } from "@/components/shopping-list";
+import { sendToOpenClawAction, setHaveItAction } from "./actions";
 
 export default async function ListPage({ searchParams }: PageProps<"/list">) {
   const sp = await searchParams;
@@ -25,8 +26,19 @@ export default async function ListPage({ searchParams }: PageProps<"/list">) {
           </Link>
         </div>
       ) : (
-        <ShoppingList key={start} weekStart={start} dinners={dinners}
-          snacks={snacks} items={items} canSendToOpenClaw={openClawConfigured()} />
+        <ShoppingList
+          key={start}
+          summary={`From ${[
+            dinners && `${dinners} ${dinners === 1 ? "dinner" : "dinners"}`,
+            snacks && `${snacks} ${snacks === 1 ? "snack" : "snacks"}`,
+          ]
+            .filter(Boolean)
+            .join(" and ")}`}
+          items={items}
+          setHaveIt={setHaveItAction.bind(null, start)}
+          send={sendToOpenClawAction.bind(null, start)}
+          canSendToOpenClaw={openClawConfigured()}
+        />
       )}
 
       <p className="mt-8 text-center">

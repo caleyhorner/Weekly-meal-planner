@@ -21,23 +21,21 @@ export type WeekList = {
   snacks: number;
 };
 
-export async function getShoppingList(weekStart: string): Promise<WeekList> {
-  const [{ days }, snacks] = await Promise.all([getWeek(weekStart), getWeekSnacks(weekStart)]);
-  const planned = days.filter((d) => d.status === "recipe" && d.recipe);
-  // Dinners (at each night's size) and snacks (by the batch) both go on the list.
-  const meals = [
-    ...planned.map((d) => ({ recipe: d.recipe!, factor: d.multiplier })),
-    ...snacks.map((s) => ({ recipe: s.recipe, factor: s.multiplier })),
-  ];
-  const ids = [...new Set(meals.map((m) => m.recipe.id))];
+/** A recipe to shop for, and how many times over to make it. */
+export type ListMeal = { recipe: { id: string; title: string }; factor: number };
 
-  const [ingredients, aliasRows, stapleRows, haveRows] = await Promise.all([
+/**
+ * Merges the ingredients of these meals into one shopping list (aliases merged, staples left
+ * off). `haveIt` holds the items already ticked as "have it". Shared by the week and parties.
+ */
+export async function shoppingListFor(meals: ListMeal[], haveIt: Set<string>) {
+  const ids = [...new Set(meals.map((m) => m.recipe.id))];
+  const [ingredients, aliasRows, stapleRows] = await Promise.all([
     ids.length
       ? db.select().from(recipeIngredients).where(inArray(recipeIngredients.recipeId, ids))
       : Promise.resolve([]),
     listAliases(),
     listStaples(),
-    db.select().from(shoppingHaveIt).where(eq(shoppingHaveIt.weekStart, weekStart)),
   ]);
 
   const byRecipe = new Map<string, typeof ingredients>();
@@ -63,12 +61,23 @@ export async function getShoppingList(weekStart: string): Promise<WeekList> {
     aliases: new Map(aliasRows.map((a) => [a.alias, a.item])),
     staples: new Set(stapleRows),
   });
+  return list.map((i) => ({ ...i, haveIt: haveIt.has(i.item) }));
+}
+
+export async function getShoppingList(weekStart: string): Promise<WeekList> {
+  const [{ days }, snacks, haveRows] = await Promise.all([
+    getWeek(weekStart),
+    getWeekSnacks(weekStart),
+    db.select().from(shoppingHaveIt).where(eq(shoppingHaveIt.weekStart, weekStart)),
+  ]);
+  const planned = days.filter((d) => d.status === "recipe" && d.recipe);
+  // Dinners (at each night's size) and snacks (by the batch) both go on the list.
+  const meals = [
+    ...planned.map((d) => ({ recipe: d.recipe!, factor: d.multiplier })),
+    ...snacks.map((s) => ({ recipe: s.recipe, factor: s.multiplier })),
+  ];
   const have = new Set(haveRows.filter((r) => r.haveIt).map((r) => r.item));
-  return {
-    items: list.map((i) => ({ ...i, haveIt: have.has(i.item) })),
-    dinners: planned.length,
-    snacks: snacks.length,
-  };
+  return { items: await shoppingListFor(meals, have), dinners: planned.length, snacks: snacks.length };
 }
 
 export async function setHaveIt(weekStart: string, item: string, haveIt: boolean) {

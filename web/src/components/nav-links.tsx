@@ -6,6 +6,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 const LINKS = [
   { href: "/", label: "Week", match: (p: string) => p === "/" || p.startsWith("/week") },
   { href: "/list", label: "List", match: (p: string) => p.startsWith("/list") },
+  { href: "/parties", label: "Parties", match: (p: string) => p.startsWith("/parties") },
   {
     href: "/recipes",
     label: "Recipes",
@@ -27,7 +28,7 @@ export function NavLinks() {
         key={l.href}
         href={href}
         aria-current={active ? "page" : undefined}
-        className={`flex min-h-12 items-center justify-center rounded-2xl px-2 text-base font-bold whitespace-nowrap transition-colors sm:px-5 ${
+        className={`flex min-h-12 items-center justify-center rounded-2xl px-1 text-[15px] font-bold sm:text-base whitespace-nowrap transition-colors sm:px-5 ${
           active ? "bg-ink text-bg" : "bg-surface text-ink hover:bg-surface-2"
         }`}
       >

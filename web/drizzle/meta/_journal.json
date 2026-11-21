@@ -64,6 +64,13 @@
       "when": 1795064694130,
       "tag": "0008_feed_sources_seed",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1795255094086,
+      "tag": "0009_dinner_parties",
+      "breakpoints": true
     }
   ]
 }

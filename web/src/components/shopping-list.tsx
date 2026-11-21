@@ -2,7 +2,9 @@
 
 import { useMemo, useState, useSyncExternalStore, useTransition } from "react";
 import { capitalise, groceriesText, type ShoppingItem } from "@/lib/shopping";
-import { addStapleAction, mergeItemsAction, sendToOpenClawAction, setHaveItAction } from "./actions";
+import { addStapleAction, mergeItemsAction } from "@/app/(app)/list/actions";
+
+type SendResult = { ok: true } | { ok: false; error: string };
 
 type Item = ShoppingItem & { haveIt: boolean };
 
@@ -23,7 +25,7 @@ function ItemMenu({
         className="btn-ghost justify-start"
         onClick={() => onDone(() => addStapleAction(item.item))}
       >
-        We always have {item.item}: leave it off every week
+        We always have {item.item}: leave it off every list
       </button>
       {others.length > 0 && (
         <div>
@@ -60,17 +62,23 @@ function ItemMenu({
   );
 }
 
+/**
+ * A shopping list with "already have it" ticks, Copy/Share and Send to OpenClaw.
+ * Used for the week's list and for each dinner party's list; the page passes in the
+ * server actions that save ticks and send this particular list.
+ */
 export function ShoppingList({
-  weekStart,
-  dinners,
-  snacks,
+  summary,
   items,
+  setHaveIt,
+  send,
   canSendToOpenClaw,
 }: {
-  weekStart: string;
-  dinners: number;
-  snacks: number;
+  /** e.g. "From 3 dinners and 1 snack" */
+  summary: string;
   items: Item[];
+  setHaveIt: (item: string, haveIt: boolean) => Promise<void>;
+  send: () => Promise<SendResult>;
   canSendToOpenClaw: boolean;
 }) {
   const [, startTransition] = useTransition();
@@ -105,7 +113,7 @@ export function ShoppingList({
     const next = !isHave(i);
     setHave((h) => ({ ...h, [i.item]: next }));
     startTransition(async () => {
-      await setHaveItAction(weekStart, i.item, next);
+      await setHaveIt(i.item, next);
     });
   };
 
@@ -128,7 +136,7 @@ export function ShoppingList({
     setSent(null);
     startSending(async () => {
       try {
-        const res = await sendToOpenClawAction(weekStart);
+        const res = await send();
         setSent(
           res.ok
             ? { ok: true, message: "Sent. OpenClaw is adding it to Groceries in Reminders." }
@@ -151,14 +159,7 @@ export function ShoppingList({
   return (
     <div>
       <p className="mt-3 text-[17px]">
-        From {[
-          dinners && `${dinners} ${dinners === 1 ? "dinner" : "dinners"}`,
-          snacks && `${snacks} ${snacks === 1 ? "snack" : "snacks"}`,
-        ]
-          .filter(Boolean)
-          .join(" and ")}
-        {". "}Untick anything you already have, then
-        send the list to Telegram.
+        {summary}. Untick anything you already have, then send the list to Telegram.
       </p>
 
       {groups.map((g) => (

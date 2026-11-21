@@ -154,6 +154,24 @@ Agreed later: suggestions based on (a) the household's taste and (b) using up th
 - **Actions:** **Save** (AI import, marked "To check"), **Plan it** (save and put on a night, or that
   week's snacks), **Not for us**. Tapping the card opens the original page.
 
+## Dinner parties
+
+Agreed later: plan ahead for a dinner party, separately from the week.
+
+- **A party** has a name, an optional date and the number of people eating (hosts included).
+- **Menu:** any number of dishes from the recipe library (dinners or snacks), as one plain list
+  (no courses). A recipe goes on a menu once; to make more, change its size.
+- **Sizing:** each dish is made to feed everyone, using the household rule with the party's
+  head count (smallest of ½, 1, 2, 3 that's enough, or a bigger whole multiple for small
+  recipes). Can be overridden per dish; changing the head count re-sizes only the dishes not
+  changed by hand.
+- **Shopping list:** per party, built the same way as the week's (aliases, staples, have-it
+  ticks saved per party, Copy / Share / Send to OpenClaw).
+- Party dishes don't count towards a recipe's "last cooked".
+
+Tables: `dinner_parties` (id, name, date null, guests), `party_dishes` (party_id, recipe_id,
+multiplier null), `party_have_it` (party_id, item).
+
 ## Later (not v1)
 - **Send to OpenClaw** button (needs a check of what OpenClaw can receive: a webhook, or a
   Telegram bot posting into the chat).

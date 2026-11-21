@@ -24,7 +24,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       </header>
       <main className="mx-auto max-w-5xl px-4 pt-2 pb-6">{children}</main>
       <nav
-        className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-4 gap-1.5 bg-bg/95 px-4 pt-2 backdrop-blur sm:hidden"
+        className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-5 gap-1.5 bg-bg/95 px-4 pt-2 backdrop-blur sm:hidden"
         style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
       >
         <Suspense>

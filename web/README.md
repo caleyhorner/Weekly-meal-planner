@@ -54,7 +54,7 @@ It does two things at once:
 
 Tapping a picture copies it into the app's own photo storage and selects it; nothing changes
 until the recipe is saved. Both need `ANTHROPIC_API_KEY`. Web search must be allowed for the
-API key's organisation in the Claude Console settings; if the web search finds nothing at all, check that first.
+API key's organisation in the Claude Console settings; if "From the web" always says it couldn't search, check that first.
 
 ## Send to OpenClaw (optional)
 

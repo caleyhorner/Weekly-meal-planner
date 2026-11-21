@@ -1,0 +1,1 @@
+ALTER TABLE "plan_days" DROP COLUMN "servings_override";

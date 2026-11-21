@@ -181,6 +181,15 @@ export function RecipeView({
           className="aspect-[16/9] w-full rounded-[20px] object-cover"
         />
       )}
+      {/* No picture, or the picture is just the recipe page it was imported from. */}
+      {!cooking && (!recipe.heroImage || recipe.sources.includes(recipe.heroImage)) && (
+        <Link
+          href={`/recipes/${recipe.id}/edit?picture=find`}
+          className={`block text-[15px] font-bold text-accent ${recipe.heroImage ? "-mt-2 text-right" : ""}`}
+        >
+          Find a better picture
+        </Link>
+      )}
 
       {recipe.needsReview && !cooking && <CheckBanner id={recipe.id} />}
 

@@ -32,6 +32,14 @@ export async function saveImage(data: Buffer, contentType: string): Promise<stri
   return key;
 }
 
+/** A stored image's bytes, for server-side processing. */
+export async function readImage(key: string): Promise<Buffer | null> {
+  const image = await loadImage(key);
+  if (!image) return null;
+  if (Buffer.isBuffer(image.body)) return image.body;
+  return Buffer.from(await new Response(image.body).arrayBuffer());
+}
+
 export async function loadImage(
   key: string,
 ): Promise<{ body: ReadableStream<Uint8Array> | Buffer; contentType: string } | null> {

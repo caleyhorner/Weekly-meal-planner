@@ -12,6 +12,7 @@ import {
 import { parseIngredientLine } from "@/lib/parse-ingredient";
 import { formatQuantity } from "@/lib/format";
 import { RecipeCover } from "./recipe-cover";
+import { PictureFinder } from "./picture-finder";
 import { resizeImage } from "@/lib/resize-image";
 import {
   deleteRecipeAction,
@@ -132,9 +133,12 @@ export function RecipeForm({
   initial,
   recipeId,
   onBack,
+  findPicture = false,
 }: {
   initial: RecipeInput;
   recipeId?: string;
+  /** Open "Find a better picture" straight away (from the recipe page's link). */
+  findPicture?: boolean;
   /** Import flow: go back to the import box instead of leaving the page. */
   onBack?: () => void;
 }) {
@@ -151,6 +155,12 @@ export function RecipeForm({
   const [uploading, setUploading] = useState(false);
   const [pictureError, setPictureError] = useState("");
   const pictureInput = useRef<HTMLInputElement>(null);
+  const [finding, setFinding] = useState(findPicture);
+
+  const choosePicture = (key: string) => {
+    setPictureOptions((all) => (all.includes(key) ? all : [key, ...all]));
+    set("heroImage", key);
+  };
 
   const addPicture = async (file: File | undefined) => {
     if (!file) return;
@@ -161,10 +171,7 @@ export function RecipeForm({
       fd.set("photo", await resizeImage(file), "picture.jpg");
       const res = await uploadPictureAction(fd);
       if ("error" in res) setPictureError(res.error);
-      else {
-        setPictureOptions((all) => [res.key, ...all]);
-        set("heroImage", res.key);
-      }
+      else choosePicture(res.key);
     } catch {
       setPictureError("That photo couldn't be added. Try another, or a JPEG instead of HEIC.");
     } finally {
@@ -282,6 +289,24 @@ export function RecipeForm({
           Shown at the top of the recipe and next to it in lists. A photo of the finished dish works best.
         </p>
         {pictureError && <p className="mt-1 text-sm text-danger">{pictureError}</p>}
+        {finding ? (
+          <PictureFinder
+            recipe={{
+              title: r.title,
+              sourceLabel: r.sourceLabel,
+              description: r.description,
+              sourceUrl: r.sourceUrl,
+              sourceImages: r.sourceImages,
+            }}
+            current={r.heroImage}
+            onPick={choosePicture}
+            onClose={() => setFinding(false)}
+          />
+        ) : (
+          <button type="button" className="btn-ghost mt-2" onClick={() => setFinding(true)}>
+            Find a better picture
+          </button>
+        )}
       </section>
 
       <section className="space-y-3">

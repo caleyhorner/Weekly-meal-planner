@@ -77,6 +77,20 @@ function readableText(html: string): string {
     .slice(0, MAX_TEXT);
 }
 
+/** Requests a web page the way a phone browser would (some recipe sites refuse plain bots). */
+export function fetchPage(url: URL | string, timeoutMs: number) {
+  return fetch(url, {
+    headers: {
+      "User-Agent":
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1",
+      Accept: "text/html,application/xhtml+xml",
+      "Accept-Language": "en-AU,en;q=0.9",
+    },
+    redirect: "follow",
+    signal: AbortSignal.timeout(timeoutMs),
+  });
+}
+
 export function isInstagram(url: URL) {
   return /(^|\.)instagram\.com$/i.test(url.hostname);
 }
@@ -93,16 +107,7 @@ export async function fetchSource(rawUrl: string): Promise<FetchedSource> {
 
   let html: string;
   try {
-    const res = await fetch(url, {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1",
-        Accept: "text/html,application/xhtml+xml",
-        "Accept-Language": "en-AU,en;q=0.9",
-      },
-      redirect: "follow",
-      signal: AbortSignal.timeout(15_000),
-    });
+    const res = await fetchPage(url, 15_000);
     if (!res.ok) return { ok: false, kind, reason: `The site answered with an error (${res.status}).` };
     html = (await res.text()).slice(0, 2_000_000);
   } catch {

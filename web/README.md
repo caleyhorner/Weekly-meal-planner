@@ -41,6 +41,21 @@ AI import and marks it "To check".
 Optional: set `CRON_SECRET` (any random string) in Vercel's environment variables. Vercel then sends
 it with the daily call and the endpoint refuses anything else.
 
+## Find a better picture
+
+When a recipe's picture is just the cookbook page or screenshot it came from, the recipe page
+offers **Find a better picture** (it's also on the Picture section of the add and edit screens).
+It does two things at once:
+
+- **From the recipe photos:** the AI looks for a photo of the finished dish on the imported
+  pages and cuts it out (one AI call, like an import).
+- **From the web:** the AI searches the web (at most 3 searches) for the author's own page or
+  well-known recipe sites with the same dish, and the app shows each page's food photo.
+
+Tapping a picture copies it into the app's own photo storage and selects it; nothing changes
+until the recipe is saved. Both need `ANTHROPIC_API_KEY`. Web search must be allowed for the
+API key's organisation in the Claude Console settings; if "From the web" always says it couldn't search, check that first.
+
 ## Send to OpenClaw (optional)
 
 The shopping list can send itself straight to your OpenClaw agent, which adds the items to

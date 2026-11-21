@@ -63,7 +63,7 @@ Be faithful to the source:
 - For "item", give the thing you'd buy, e.g. "2 brown onions, finely diced" → item "brown onion", prep "finely diced". "Juice of 1 lemon" → amount 1, item "lemon", prep "juiced".`;
 
 let client: Anthropic | null = null;
-function anthropic() {
+export function anthropic() {
   if (!process.env.ANTHROPIC_API_KEY) {
     throw new Error(
       "Automatic recipe reading isn't switched on yet (the Claude API key is missing). Use “Type it in myself” for now.",

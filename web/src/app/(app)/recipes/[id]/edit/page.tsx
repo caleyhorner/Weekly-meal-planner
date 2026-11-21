@@ -3,13 +3,15 @@ import { getRecipe } from "@/lib/recipes";
 import { RecipeForm } from "@/components/recipe-form";
 import type { Category } from "@/lib/recipe-model";
 
-export default async function EditRecipePage({ params }: PageProps<"/recipes/[id]/edit">) {
+export default async function EditRecipePage({ params, searchParams }: PageProps<"/recipes/[id]/edit">) {
   const { id } = await params;
+  const findPicture = (await searchParams).picture === "find";
   const recipe = await getRecipe(id);
   if (!recipe) notFound();
   return (
     <RecipeForm
       recipeId={recipe.id}
+      findPicture={findPicture}
       initial={{
         title: recipe.title,
         kind: recipe.kind,

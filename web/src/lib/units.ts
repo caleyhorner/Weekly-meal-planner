@@ -203,7 +203,8 @@ const DENSITIES: [string[], number, "g" | "ml"][] = [
   [["pepper", "cinnamon", "nutmeg", "ginger", "allspice", "clove", "cumin", "paprika", "turmeric", "coriander", "chilli", "chili", "cayenne", "garam masala", "curry powder", "mixed spice", "pumpkin spice", "spice", "seed"], 0.5, "g"],
   [["dried", "thyme", "sage", "rosemary", "oregano", "basil", "parsley", "dill", "mint", "chive", "tarragon", "herb"], 0.2, "g"],
   [["pea", "corn", "bean"], 0.65, "g"],
-  [["onion", "celery", "carrot", "capsicum", "mushroom", "potato", "sweet potato", "pumpkin", "apple", "pear", "leek", "shallot", "zucchini", "spinach", "kale", "cabbage", "lettuce", "tomato"], 0.55, "g"],
+  [["kale", "cavolo nero", "tuscan kale", "silverbeet", "chard", "spinach", "rocket", "lettuce", "cabbage", "bok choy", "pak choy"], 0.25, "g"],
+  [["onion", "celery", "carrot", "capsicum", "mushroom", "potato", "sweet potato", "pumpkin", "squash", "apple", "pear", "leek", "shallot", "zucchini", "tomato", "parsnip", "beetroot", "cauliflower", "broccoli", "eggplant", "cucumber", "fennel"], 0.55, "g"],
 ];
 
 /**
@@ -222,18 +223,22 @@ export function densityOf(item: string): { density: number; buy: "g" | "ml" } | 
   return null;
 }
 
-// Roughly what one weighs, and whether you buy it one at a time ("each": apples, loaves of
-// bread) or by weight (potatoes, dates). First match wins; names are matched at the end,
-// so "granny smith apple" is an apple but "apple cider" isn't.
-type Each = { grams: number; buy: "each" | "weight"; unit?: string };
+// Roughly what one weighs, and how it's bought: one at a time ("each": apples, carrots,
+// loaves of bread), by the bunch (kale, celery, herbs) or by weight (mushrooms, green beans,
+// berries). First match wins; names are matched at the end, so "granny smith apple" is an
+// apple but "apple cider" isn't. `per`: how many stalks / sprigs / counted ones make a bunch.
+type Each = { grams: number; buy: "each" | "bunch" | "weight"; unit?: string; per?: number };
 const EACH: [string[], Each][] = [
-  // Look like the things below but are bought by weight, tin or punnet
+  // Look like the things below but are bought by weight, tin, bag or punnet
   [[
     "cherry tomato", "grape tomato", "sun-dried tomato", "sundried tomato", "semi-dried tomato",
     "tinned tomato", "canned tomato", "diced tomato", "crushed tomato", "chopped tomato",
     "peeled tomato", "whole peeled tomato", "dried apple", "tinned peach", "canned peach",
     "fried shallot", "fried onion", "dried onion", "pickled onion", "pearl onion", "pickling onion",
-    "baby onion", "spring onion", "green onion", "naan bread", "turkish bread",
+    "baby onion", "naan bread", "turkish bread", "baby spinach", "baby kale", "baby potato",
+    "chat potato", "new potato", "baby carrot", "dried fig", "dried apricot", "dried cranberry",
+    "frozen pea", "frozen corn", "corn kernel", "sweetcorn kernel", "canned corn", "tinned corn",
+    "dried chilli", "chilli flake", "chilli flakes", "dried date",
   ], { grams: 0, buy: "weight" }],
   // Bread
   [["pita bread", "pita", "naan", "flatbread", "tortilla", "wrap"], { grams: 60, buy: "each" }],
@@ -242,29 +247,45 @@ const EACH: [string[], Each][] = [
   [["ciabatta"], { grams: 400, buy: "each", unit: "loaf" }],
   [["sourdough bread", "sourdough", "bread", "brioche", "challah", "cornbread", "focaccia", "loaf"], { grams: 700, buy: "each", unit: "loaf" }],
   // Fruit
-  [["apple", "pear", "orange", "nectarine", "peach"], { grams: 180, buy: "each" }],
+  [["apple", "pear", "orange", "nectarine", "peach", "quince", "nashi"], { grams: 180, buy: "each" }],
   [["mandarin", "kiwi", "kiwifruit", "plum", "persimmon"], { grams: 90, buy: "each" }],
+  [["apricot", "fig", "passionfruit", "passion fruit"], { grams: 50, buy: "each" }],
   [["lemon"], { grams: 120, buy: "each" }],
   [["lime"], { grams: 70, buy: "each" }],
+  [["grapefruit"], { grams: 300, buy: "each" }],
   [["banana"], { grams: 120, buy: "each" }],
   [["avocado"], { grams: 200, buy: "each" }],
-  [["mango", "pomegranate"], { grams: 350, buy: "each" }],
-  [["pineapple"], { grams: 1200, buy: "each" }],
-  // Vegetables
+  [["mango", "pomegranate", "papaya"], { grams: 350, buy: "each" }],
+  [["pineapple", "rockmelon", "honeydew", "cantaloupe", "melon"], { grams: 1300, buy: "each" }],
+  [["watermelon"], { grams: 4000, buy: "each" }],
+  // Bought by the bunch
+  [["kale", "cavolo nero", "tuscan kale", "silverbeet", "swiss chard", "chard", "english spinach", "spinach", "bok choy", "pak choy", "choy sum", "gai lan"], { grams: 250, buy: "bunch", per: 1 }],
+  [["celery"], { grams: 600, buy: "bunch", per: 10 }],
+  [["spring onion", "green onion", "scallion"], { grams: 100, buy: "bunch", per: 8 }],
+  [["asparagus"], { grams: 200, buy: "bunch", per: 10 }],
+  [["radish"], { grams: 250, buy: "bunch", per: 10 }],
+  [["parsley", "flat-leaf parsley", "flat leaf parsley", "italian parsley", "coriander", "mint", "dill", "basil", "chive", "thai basil", "tarragon", "chervil"], { grams: 40, buy: "bunch", per: 10 }],
+  [["thyme", "rosemary", "sage", "oregano", "marjoram", "lemon thyme"], { grams: 20, buy: "bunch", per: 10 }],
+  [["lemongrass"], { grams: 100, buy: "each" }],
+  // Vegetables bought one at a time
   [["onion", "red onion", "brown onion", "white onion", "spanish onion"], { grams: 160, buy: "each" }],
   [["shallot", "eschalot"], { grams: 40, buy: "each" }],
-  [["capsicum", "zucchini", "corn cob", "corn on the cob"], { grams: 200, buy: "each" }],
+  [["sweet potato", "kumara"], { grams: 400, buy: "each" }],
+  [["potato"], { grams: 200, buy: "each" }],
+  [["carrot", "parsnip"], { grams: 130, buy: "each" }],
+  [["beetroot", "turnip", "swede", "kohlrabi"], { grams: 200, buy: "each" }],
+  [["celeriac"], { grams: 700, buy: "each" }],
+  [["capsicum", "zucchini", "corn cob", "corn on the cob", "corn", "sweetcorn"], { grams: 200, buy: "each" }],
   [["lebanese cucumber"], { grams: 150, buy: "each" }],
-  [["cucumber", "eggplant", "leek", "fennel", "fennel bulb"], { grams: 300, buy: "each" }],
-  [["broccoli"], { grams: 350, buy: "each" }],
-  [["cauliflower", "iceberg lettuce", "cos lettuce", "lettuce"], { grams: 800, buy: "each" }],
+  [["cucumber", "eggplant", "leek", "fennel", "fennel bulb", "artichoke"], { grams: 300, buy: "each" }],
+  [["broccoli", "broccolini"], { grams: 350, buy: "each" }],
+  [["cauliflower", "iceberg lettuce", "cos lettuce", "lettuce", "radicchio", "baby cos"], { grams: 700, buy: "each" }],
+  [["cabbage", "red cabbage", "savoy cabbage", "wombok", "chinese cabbage"], { grams: 1500, buy: "each" }],
+  [["butternut pumpkin", "butternut squash", "kent pumpkin", "jap pumpkin", "pumpkin", "squash"], { grams: 1500, buy: "each" }],
   [["tomato"], { grams: 120, buy: "each" }],
+  [["chilli", "chili", "jalapeno", "jalapeño"], { grams: 10, buy: "each" }],
   // Bought by weight, but recipes sometimes count them
   [["medjool date", "date"], { grams: 20, buy: "weight" }],
-  [["sweet potato"], { grams: 300, buy: "weight" }],
-  [["potato"], { grams: 200, buy: "weight" }],
-  [["carrot"], { grams: 120, buy: "weight" }],
-  [["fig"], { grams: 50, buy: "weight" }],
 ];
 const EACH_PATTERNS = EACH.map(([words, each]) => ({
   re: new RegExp(`(^|\\s)(${words.join("|")})$`, "i"),

@@ -60,11 +60,12 @@ test("leaves out staples, applies 'same thing' aliases, groups by aisle", () => 
     list.map((i) => i.item),
     ["spring onion", "thyme", "chicken thigh"],
   );
-  assert.deepEqual(list[0].quantities, ["×3"]);
+  // 3 spring onions: one bunch
+  assert.deepEqual(list[0].quantities, ["1 bunch"]);
   assert.deepEqual(list[1].quantities, []);
   assert.equal(
     groceriesText(list),
-    "Add to Groceries:\nSpring onion ×3\nThyme\nChicken thigh 500g",
+    "Add to Groceries:\nSpring onion 1 bunch\nThyme\nChicken thigh 500g",
   );
 });
 
@@ -158,8 +159,10 @@ test("odd units, units left in names and pack sizes all become grams and millili
     { aliases: new Map(), staples: new Set() },
   );
   const get = (n: string) => list.find((i) => i.item === n)?.quantities;
-  assert.deepEqual(get("sweet potato"), ["1.37kg"]);
-  assert.deepEqual(get("russet potato"), ["910g"]);
+  // 3 lb ≈ 1.36kg at 400g each
+  assert.deepEqual(get("sweet potato"), ["×4"]);
+  // 2 lb ≈ 907g at 200g each
+  assert.deepEqual(get("russet potato"), ["×5"]);
   assert.deepEqual(get("sugar"), ["34g"]);
   assert.deepEqual(get("brown sugar"), ["225g"]);
   assert.deepEqual(get("vanilla extract"), ["10ml"]);
@@ -200,7 +203,8 @@ test("the Thanksgiving party's leftovers: cheeses, dates, garlic and handfuls", 
   assert.deepEqual(get("garlic"), ["4 bulbs (32 cloves)"]);
   assert.deepEqual(get("rocket"), ["60g"]);
   assert.deepEqual(get("pork sausage"), ["685g"]);
-  assert.deepEqual(get("rosemary"), ["20g"]);
+  // 5 tbsp ≈ 20g: one bunch
+  assert.deepEqual(get("rosemary"), ["1 bunch"]);
 });
 
 test("a count and a weight of the same fruit become one weight", () => {
@@ -246,4 +250,42 @@ test("apples, onions and bread are bought one at a time, so the list counts them
   assert.deepEqual(get("crushed tomato"), ["800g"]);
   assert.deepEqual(get("baguette"), ["×1"]);
   assert.deepEqual(get("coriander"), ["2 bunches"]);
+});
+
+test("fruit and veg are counted or bunched, not weighed", () => {
+  const list = buildShoppingList(
+    [
+      line({ item: "carrots", amount: 3, unit: "lbs", category: "Produce", recipe: "Roast carrots" }),
+      line({ item: "cavolo nero", amount: 450, unit: "g", category: "Produce", recipe: "Caesar" }),
+      line({ item: "celery", amount: 4, unit: "stalks", category: "Produce", recipe: "Stuffing" }),
+      line({ item: "celery", amount: 1, unit: "cup", category: "Produce", recipe: "Gravy" }),
+      line({ item: "spring onions", amount: 3, category: "Produce", recipe: "Salad" }),
+      line({ item: "fresh basil", amount: 4, unit: "tbsp", category: "Produce", recipe: "Ricotta" }),
+      line({ item: "flat-leaf parsley", amount: 1, unit: "cup", category: "Produce", recipe: "Stuffing" }),
+      line({ item: "pears", amount: 2, unit: "lbs", category: "Produce", recipe: "Carpaccio" }),
+      line({ item: "butternut squash", amount: 2, unit: "lbs", category: "Produce", recipe: "Soup" }),
+      line({ item: "brussels sprouts", amount: 1, unit: "lb", category: "Produce", recipe: "Caesar" }),
+      line({ item: "mushrooms", amount: 8, unit: "oz", category: "Produce", recipe: "Gravy" }),
+      line({ item: "green beans", amount: 1.5, unit: "lbs", category: "Produce", recipe: "Beans" }),
+      line({ item: "fresh cranberries", amount: 12, unit: "oz", category: "Produce", recipe: "Sauce" }),
+    ],
+    { aliases: new Map(), staples: new Set() },
+  );
+  const get = (n: string) => list.find((i) => i.item === n)?.quantities;
+  // 3 lb ≈ 1.36kg at 130g a carrot
+  assert.deepEqual(get("carrot"), ["×11"]);
+  assert.deepEqual(get("cavolo nero"), ["2 bunches"]);
+  // 4 stalks + a cup (≈138g) of a 10-stalk, 600g bunch
+  assert.deepEqual(get("celery"), ["1 bunch"]);
+  assert.deepEqual(get("spring onion"), ["1 bunch"]);
+  assert.deepEqual(get("basil"), ["1 bunch"]);
+  // 1 cup × 0.2 g/ml = 50g of a 40g bunch
+  assert.deepEqual(get("flat-leaf parsley"), ["2 bunches"]);
+  assert.deepEqual(get("pear"), ["×6"]);
+  assert.deepEqual(get("butternut squash"), ["×1"]);
+  // Bought loose by weight, in bags or punnets
+  assert.deepEqual(get("brussels sprout"), ["455g"]);
+  assert.deepEqual(get("mushroom"), ["230g"]);
+  assert.deepEqual(get("green bean"), ["685g"]);
+  assert.deepEqual(get("cranberry"), ["345g"]);
 });

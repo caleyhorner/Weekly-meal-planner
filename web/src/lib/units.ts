@@ -35,6 +35,7 @@ const UNIT_SYNONYMS: Record<string, string> = {
   sprig: "sprig", sprigs: "sprig",
   stalk: "stalk", stalks: "stalk",
   piece: "piece", pieces: "piece",
+  loaf: "loaf", loaves: "loaf",
   bulb: "bulb", bulbs: "bulb", head: "bulb", heads: "bulb",
 };
 
@@ -190,6 +191,7 @@ const DENSITIES: [string[], number, "g" | "ml"][] = [
   [["salt"], 1.1, "g"],
   [["panko"], 0.25, "g"],
   [["breadcrumb", "stuffing mix"], 0.45, "g"],
+  [["sourdough", "bread", "brioche", "challah", "baguette", "ciabatta", "focaccia", "cornbread", "crouton"], 0.17, "g"],
   [["oat"], 0.4, "g"],
   [["rice", "quinoa", "couscous", "lentil", "polenta", "cornmeal", "semolina"], 0.85, "g"],
   [["feta", "goat cheese", "goats cheese", "goat's cheese", "chevre", "blue cheese", "gorgonzola", "stilton", "halloumi", "brie", "camembert", "paneer", "tofu"], 0.6, "g"],
@@ -220,25 +222,57 @@ export function densityOf(item: string): { density: number; buy: "g" | "ml" } | 
   return null;
 }
 
-// Roughly what one weighs, so "12 dates" and "⅔ cup dates" can be one amount in grams.
-const EACH: [string[], number][] = [
-  [["medjool date", "date"], 20],
-  [["sweet potato"], 300],
-  [["potato"], 200],
-  [["apple", "pear", "orange"], 180],
-  [["onion", "red onion", "brown onion"], 160],
-  [["shallot", "eschalot"], 40],
-  [["carrot"], 120],
-  [["zucchini", "capsicum"], 200],
-  [["tomato"], 120],
-  [["lemon", "lime"], 100],
-  [["banana"], 120],
-  [["fig"], 50],
+// Roughly what one weighs, and whether you buy it one at a time ("each": apples, loaves of
+// bread) or by weight (potatoes, dates). First match wins; names are matched at the end,
+// so "granny smith apple" is an apple but "apple cider" isn't.
+type Each = { grams: number; buy: "each" | "weight"; unit?: string };
+const EACH: [string[], Each][] = [
+  // Look like the things below but are bought by weight, tin or punnet
+  [[
+    "cherry tomato", "grape tomato", "sun-dried tomato", "sundried tomato", "semi-dried tomato",
+    "tinned tomato", "canned tomato", "diced tomato", "crushed tomato", "chopped tomato",
+    "peeled tomato", "whole peeled tomato", "dried apple", "tinned peach", "canned peach",
+    "fried shallot", "fried onion", "dried onion", "pickled onion", "pearl onion", "pickling onion",
+    "baby onion", "spring onion", "green onion", "naan bread", "turkish bread",
+  ], { grams: 0, buy: "weight" }],
+  // Bread
+  [["pita bread", "pita", "naan", "flatbread", "tortilla", "wrap"], { grams: 60, buy: "each" }],
+  [["bread roll", "dinner roll", "roll", "bun", "brioche bun", "slider bun"], { grams: 70, buy: "each" }],
+  [["baguette", "french stick"], { grams: 250, buy: "each" }],
+  [["ciabatta"], { grams: 400, buy: "each", unit: "loaf" }],
+  [["sourdough bread", "sourdough", "bread", "brioche", "challah", "cornbread", "focaccia", "loaf"], { grams: 700, buy: "each", unit: "loaf" }],
+  // Fruit
+  [["apple", "pear", "orange", "nectarine", "peach"], { grams: 180, buy: "each" }],
+  [["mandarin", "kiwi", "kiwifruit", "plum", "persimmon"], { grams: 90, buy: "each" }],
+  [["lemon"], { grams: 120, buy: "each" }],
+  [["lime"], { grams: 70, buy: "each" }],
+  [["banana"], { grams: 120, buy: "each" }],
+  [["avocado"], { grams: 200, buy: "each" }],
+  [["mango", "pomegranate"], { grams: 350, buy: "each" }],
+  [["pineapple"], { grams: 1200, buy: "each" }],
+  // Vegetables
+  [["onion", "red onion", "brown onion", "white onion", "spanish onion"], { grams: 160, buy: "each" }],
+  [["shallot", "eschalot"], { grams: 40, buy: "each" }],
+  [["capsicum", "zucchini", "corn cob", "corn on the cob"], { grams: 200, buy: "each" }],
+  [["lebanese cucumber"], { grams: 150, buy: "each" }],
+  [["cucumber", "eggplant", "leek", "fennel", "fennel bulb"], { grams: 300, buy: "each" }],
+  [["broccoli"], { grams: 350, buy: "each" }],
+  [["cauliflower", "iceberg lettuce", "cos lettuce", "lettuce"], { grams: 800, buy: "each" }],
+  [["tomato"], { grams: 120, buy: "each" }],
+  // Bought by weight, but recipes sometimes count them
+  [["medjool date", "date"], { grams: 20, buy: "weight" }],
+  [["sweet potato"], { grams: 300, buy: "weight" }],
+  [["potato"], { grams: 200, buy: "weight" }],
+  [["carrot"], { grams: 120, buy: "weight" }],
+  [["fig"], { grams: 50, buy: "weight" }],
 ];
-const EACH_PATTERNS = EACH.map(([words, g]) => ({ re: new RegExp(`(^|\\s)(${words.join("|")})$`, "i"), g }));
+const EACH_PATTERNS = EACH.map(([words, each]) => ({
+  re: new RegExp(`(^|\\s)(${words.join("|")})$`, "i"),
+  each,
+}));
 
-/** Grams one of these weighs, or null if we don't know. */
-export function eachWeight(item: string): number | null {
-  for (const p of EACH_PATTERNS) if (p.re.test(item)) return p.g;
+/** What one of these weighs and how it's bought, or null if we don't know. */
+export function eachOf(item: string): Each | null {
+  for (const p of EACH_PATTERNS) if (p.re.test(item)) return p.each;
   return null;
 }

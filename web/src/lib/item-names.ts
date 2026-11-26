@@ -7,6 +7,7 @@ import { unitAtStartOf } from "./units";
 const LEADING_NOISE = [
   "fresh", "freshly", "large", "medium", "small", "extra large", "extra-large", "jumbo",
   "good quality", "good-quality", "organic", "free range", "free-range",
+  "day-old", "day old", "stale", "crusty", "cubed", "torn", "loaf of", "loaves of",
   "low sodium", "low-sodium", "reduced sodium", "reduced-sodium", "salt-reduced", "salt reduced",
 ];
 
@@ -52,6 +53,9 @@ const SAME_AS: Record<string, string> = {
   "ground turkey": "turkey mince", "ground chicken": "chicken mince", "ground lamb": "lamb mince",
   "chicken broth": "chicken stock", "beef broth": "beef stock", "vegetable broth": "vegetable stock",
   "turkey broth": "turkey stock",
+  "bread cube": "bread", "sourdough loaf": "sourdough bread", "sourdough": "sourdough bread",
+  "white bread loaf": "white bread", "bread loaf": "bread", "country bread": "bread",
+  "rustic bread": "bread", "italian bread": "bread", "french bread": "baguette",
   "bread crumb": "breadcrumb", "panko bread crumb": "panko breadcrumb",
   "canned pumpkin": "pumpkin puree", "pumpkin purée": "pumpkin puree",
 };

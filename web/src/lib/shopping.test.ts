@@ -214,3 +214,36 @@ test("a count and a weight of the same fruit become one weight", () => {
   // 12 × 20g + 167ml × 0.6 g/ml
   assert.deepEqual(list[0].quantities, ["340g"]);
 });
+
+test("apples, onions and bread are bought one at a time, so the list counts them", () => {
+  const list = buildShoppingList(
+    [
+      line({ item: "granny smith apples", amount: 6, unit: "lbs", category: "Produce", recipe: "Apple pie" }),
+      line({ item: "apple", amount: 1, category: "Produce", recipe: "Salad" }),
+      line({ item: "onion", amount: 2, unit: "cups", category: "Produce", recipe: "Stuffing" }),
+      line({ item: "brown onion", amount: 1, category: "Produce", recipe: "Gravy" }),
+      line({ item: "cubed day-old sourdough bread", amount: 12, unit: "cups", category: "Bakery", recipe: "Stuffing" }),
+      line({ item: "sourdough loaf", amount: 1, category: "Bakery", recipe: "Toast" }),
+      line({ item: "lemons", amount: 2, category: "Produce", recipe: "Turkey" }),
+      line({ item: "cherry tomatoes", amount: 250, unit: "g", category: "Produce", recipe: "Salad" }),
+      line({ item: "crushed tomatoes", amount: 2, unit: "can", category: "Pantry", raw: "2 (400g) cans crushed tomatoes" }),
+      line({ item: "baguette", amount: 1, category: "Bakery", recipe: "Dip" }),
+      line({ item: "coriander", amount: 2, unit: "bunches", category: "Produce", recipe: "Salsa" }),
+    ],
+    { aliases: new Map(), staples: new Set() },
+  );
+  const get = (n: string) => list.find((i) => i.item === n)?.quantities;
+  // 6 lb ≈ 2.72kg at 180g an apple = 15.1 → 16, plus 1
+  assert.deepEqual(get("granny smith apple"), ["×16"]);
+  assert.deepEqual(get("apple"), ["×1"]);
+  // 2 cups × 0.55 g/ml = 275g ÷ 160g = 1.7 → 2
+  assert.deepEqual(get("onion"), ["×2"]);
+  assert.deepEqual(get("brown onion"), ["×1"]);
+  // 12 cups × 250ml × 0.17 g/ml = 510g ÷ 700g + 1 loaf
+  assert.deepEqual(get("sourdough bread"), ["2 loaves"]);
+  assert.deepEqual(get("lemon"), ["×2"]);
+  assert.deepEqual(get("cherry tomato"), ["250g"]);
+  assert.deepEqual(get("crushed tomato"), ["800g"]);
+  assert.deepEqual(get("baguette"), ["×1"]);
+  assert.deepEqual(get("coriander"), ["2 bunches"]);
+});

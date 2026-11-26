@@ -36,6 +36,12 @@ export const UNITS = [
   "sprig",
   "stalk",
   "piece",
+  "oz",
+  "lb",
+  "fl oz",
+  "stick",
+  "pint",
+  "quart",
 ] as const;
 
 export const RECIPE_KINDS = ["dinner", "snack"] as const;

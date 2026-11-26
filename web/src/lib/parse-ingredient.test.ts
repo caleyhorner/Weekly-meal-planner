@@ -46,3 +46,14 @@ test("aisle guesses prefer pantry items over the meat or dairy words inside them
   assert.equal(guessCategory("green beans"), "Produce");
   assert.equal(guessCategory("butter"), "Dairy & Eggs");
 });
+
+test("understands American units", () => {
+  const lb = parseIngredientLine("1 lb ground beef");
+  assert.deepEqual([lb.amount, lb.unit, lb.item], [1, "lb", "ground beef"]);
+  const oz = parseIngredientLine("8 oz. cream cheese, softened");
+  assert.deepEqual([oz.amount, oz.unit, oz.item], [8, "oz", "cream cheese"]);
+  const floz = parseIngredientLine("12 fl oz evaporated milk");
+  assert.deepEqual([floz.amount, floz.unit, floz.item], [12, "fl oz", "evaporated milk"]);
+  assert.equal(parseIngredientLine("2 Tablespoons butter").unit, "tbsp");
+  assert.equal(parseIngredientLine("1 stick unsalted butter").unit, "stick");
+});

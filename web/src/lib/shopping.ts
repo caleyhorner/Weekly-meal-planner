@@ -3,7 +3,7 @@ import { CATEGORIES, type Category } from "./recipe-model";
 import { formatQuantity } from "./format";
 import { canonicalItems } from "./item-names";
 import { splitLeadingQuantity } from "./parse-ingredient";
-import { densityOf, knownUnit, normaliseUnit, sizeInText, toMetric, unitAtStartOf } from "./units";
+import { densityOf, eachWeight, knownUnit, normaliseUnit, sizeInText, toMetric, unitAtStartOf } from "./units";
 
 export type ListInput = {
   item: string;
@@ -26,7 +26,7 @@ export type ShoppingItem = {
 };
 
 /** Things you buy whole: always round up. */
-const WHOLE_UNITS = new Set(["can", "sheet", "clove", "bunch", "packet", "slice", "piece", "stalk", "sprig", "handful", "stick"]);
+const WHOLE_UNITS = new Set(["can", "sheet", "clove", "bunch", "packet", "slice", "piece", "stalk", "sprig", "stick", "bulb"]);
 
 /**
  * Grams or millilitres, rounded up so there's always enough: 3g, 45g, 340g, then kg / L
@@ -107,6 +107,21 @@ export function buildShoppingList(
         t.set("g", (t.get("g") ?? 0) + t.get("ml")! * UNKNOWN_DENSITY);
         t.delete("ml");
       }
+      // "12 dates" + "⅔ cup dates": one amount in grams.
+      const each = eachWeight(acc.item);
+      if (each && t.has("g") && t.has("count")) {
+        t.set("g", t.get("g")! + t.get("count")! * each);
+        t.delete("count");
+      }
+      // Garlic is bought by the bulb (about 10 cloves).
+      let garlicCloves = 0;
+      if (acc.item === "garlic") {
+        garlicCloves = (t.get("clove") ?? 0) + (t.get("count") ?? 0);
+        const bulbs = Math.ceil(garlicCloves / CLOVES_PER_BULB - 1e-9) + Math.ceil((t.get("bulb") ?? 0) - 1e-9);
+        t.delete("clove");
+        t.delete("count");
+        if (bulbs) t.set("bulb", bulbs);
+      }
       const keys = [...t.keys()].sort((a, b) => rank(a) - rank(b));
       return {
         item: acc.item,
@@ -115,6 +130,9 @@ export function buildShoppingList(
           const amount = t.get(key)!;
           if (key === "g" || key === "ml") return formatMetric(amount, key);
           if (key === "count") return `×${Math.ceil(amount - 1e-9)}`;
+          if (key === "bulb" && garlicCloves) {
+            return `${formatQuantity(Math.ceil(amount - 1e-9), key)} (${Math.ceil(garlicCloves - 1e-9)} cloves)`;
+          }
           if (WHOLE_UNITS.has(key)) return formatQuantity(Math.ceil(amount - 1e-9), key);
           return formatQuantity(amount, key);
         }),
@@ -123,6 +141,8 @@ export function buildShoppingList(
     })
     .sort((a, b) => order(a.category) - order(b.category) || a.item.localeCompare(b.item));
 }
+
+const CLOVES_PER_BULB = 10;
 
 /** Aisles where an unknown item measured in cups is probably a liquid. */
 const LIQUID_AISLES = new Set<Category>(["Drinks", "Condiments & Sauces", "Dairy & Eggs"]);

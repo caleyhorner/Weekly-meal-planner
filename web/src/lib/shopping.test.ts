@@ -175,3 +175,42 @@ test("odd units, units left in names and pack sizes all become grams and millili
   const all = list.flatMap((i) => [i.item, ...i.quantities]).join(" ");
   assert.doesNotMatch(all, /\b(cups?|tsp|tbsp|lbs?|oz|pounds?|ounces?|teaspoons?|tablespoons?)\b/i);
 });
+
+test("the Thanksgiving party's leftovers: cheeses, dates, garlic and handfuls", () => {
+  const list = buildShoppingList(
+    [
+      line({ item: "feta", amount: 0.5, unit: "cup", category: "Dairy & Eggs", recipe: "Carpaccio" }),
+      line({ item: "feta cheese", amount: 6, unit: "oz", category: "Dairy & Eggs", recipe: "Dates" }),
+      line({ item: "medjool dates", amount: 12, category: "Produce", recipe: "Beans" }),
+      line({ item: "date", amount: 2 / 3, unit: "cup", category: "Produce", recipe: "Carrots" }),
+      line({ item: "garlic", amount: 30, unit: "cloves", category: "Produce", recipe: "Turkey" }),
+      line({ item: "garlic cloves", amount: 2, category: "Produce", recipe: "Salad" }),
+      line({ item: "arugula", amount: 2, unit: "handfuls", category: "Produce", recipe: "Carpaccio" }),
+      line({ item: "pork sausage", amount: 1.5, unit: "lbs", category: "Meat & Seafood", recipe: "Stuffing" }),
+      line({ item: "fresh rosemary", amount: 5, unit: "tbsp", category: "Produce", recipe: "Stuffing" }),
+    ],
+    { aliases: new Map(), staples: new Set() },
+  );
+  const get = (n: string) => list.find((i) => i.item === n)?.quantities;
+  // ½ cup crumbled × 0.6 g/ml = 75g, plus 6 oz = 170g
+  assert.deepEqual(get("feta"), ["250g"]);
+  assert.equal(get("feta cheese"), undefined);
+  // 12 medjool dates × 20g + ⅔ cup (167ml × 0.6 g/ml)
+  assert.deepEqual(get("date"), ["340g"]);
+  assert.deepEqual(get("garlic"), ["4 bulbs (32 cloves)"]);
+  assert.deepEqual(get("rocket"), ["60g"]);
+  assert.deepEqual(get("pork sausage"), ["685g"]);
+  assert.deepEqual(get("rosemary"), ["20g"]);
+});
+
+test("a count and a weight of the same fruit become one weight", () => {
+  const list = buildShoppingList(
+    [
+      line({ item: "date", amount: 12, category: "Produce" }),
+      line({ item: "dates", amount: 2 / 3, unit: "cup", category: "Produce" }),
+    ],
+    { aliases: new Map(), staples: new Set() },
+  );
+  // 12 × 20g + 167ml × 0.6 g/ml
+  assert.deepEqual(list[0].quantities, ["340g"]);
+});

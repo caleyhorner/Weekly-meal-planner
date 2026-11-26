@@ -46,7 +46,8 @@ const SAME_AS: Record<string, string> = {
   "yellow onion": "brown onion",
   "bell pepper": "capsicum", "red bell pepper": "red capsicum", "green bell pepper": "green capsicum",
   "yellow bell pepper": "yellow capsicum",
-  arugula: "rocket", "romaine lettuce": "cos lettuce", romaine: "cos lettuce",
+  "medjool date": "date", "pitted date": "date", "pitted medjool date": "date",
+  arugula: "rocket", "baby arugula": "baby rocket", "romaine lettuce": "cos lettuce", romaine: "cos lettuce",
   "ground beef": "beef mince", "ground pork": "pork mince",
   "ground turkey": "turkey mince", "ground chicken": "chicken mince", "ground lamb": "lamb mince",
   "chicken broth": "chicken stock", "beef broth": "beef stock", "vegetable broth": "vegetable stock",
@@ -54,6 +55,14 @@ const SAME_AS: Record<string, string> = {
   "bread crumb": "breadcrumb", "panko bread crumb": "panko breadcrumb",
   "canned pumpkin": "pumpkin puree", "pumpkin purée": "pumpkin puree",
 };
+
+/** Cheeses known by name alone, so "feta cheese" and "feta" are one line. */
+const NAMED_CHEESES = new Set([
+  "feta", "parmesan", "parmigiano reggiano", "parmigiano-reggiano", "pecorino", "pecorino romano",
+  "cheddar", "sharp cheddar", "tasty", "mozzarella", "ricotta", "gruyere", "gruyère", "halloumi",
+  "mascarpone", "brie", "camembert", "gorgonzola", "manchego", "provolone", "emmental",
+  "taleggio", "fontina", "burrata", "bocconcini", "stilton", "gouda", "jarlsberg",
+]);
 
 /** Words that look plural but aren't (or read badly made singular). */
 const KEEP_AS_IS = new Set([
@@ -104,6 +113,10 @@ function canonicalOne(item: string): string {
   if (/^[a-z]+ leaf$/.test(s) && s !== "bay leaf") s = s.slice(0, -" leaf".length);
   // "thyme sprig", "rosemary sprig" → the herb.
   s = s.replace(/ (sprig|stalk|stem)$/, "");
+
+  // "feta cheese" is feta; "cream cheese" and "blue cheese" are their own things.
+  const cheese = s.match(/^(.+) cheese$/);
+  if (cheese && NAMED_CHEESES.has(cheese[1])) s = cheese[1];
 
   return SAME_AS[s] ?? s;
 }

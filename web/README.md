@@ -18,7 +18,9 @@ tsp 5ml), and common ingredients bought by weight (flour, sugar, butter, nuts, c
 are turned from cups into grams. Varieties of one thing share a line: kosher, sea and table salt
 are all "salt", "salt and pepper" becomes two lines, and American names become Australian ones
 (all-purpose flour → plain flour, heavy cream → thickened cream, chicken broth → chicken stock).
-Recipes themselves still show the amounts as written.
+Things bought one at a time are counted instead of weighed: "Apple ×16", "Sourdough bread
+2 loaves" (cups of cubed bread for stuffing included), "Garlic 4 bulbs". Recipes themselves still
+show the amounts as written.
 
 ## Deploying to Vercel (one-time setup)
 

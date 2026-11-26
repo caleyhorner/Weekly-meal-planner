@@ -34,6 +34,14 @@ function roundMetric(n: number): number {
   return Math.round(n * 10) / 10;
 }
 
+/** "cup" → "cups", "loaf" → "loaves", "bunch" → "bunches"; spoons and pinches stay as they are. */
+function pluralUnit(unit: string): string {
+  if (["tsp", "tbsp", "pinch", "g", "kg", "ml", "l", "oz", "lb", "fl oz"].includes(unit)) return unit;
+  if (unit === "loaf") return "loaves";
+  if (/(ch|sh|x|s)$/.test(unit)) return `${unit}es`;
+  return `${unit}s`;
+}
+
 /** Formats an amount + unit, normalising g→kg and ml→l when large. */
 export function formatQuantity(amount: number | null, unit: string | null): string {
   if (amount == null) return unit ?? "";
@@ -49,7 +57,7 @@ export function formatQuantity(amount: number | null, unit: string | null): stri
   }
   const n = toFraction(amount);
   if (!unit) return n;
-  const plural = amount > 1 && !["tsp", "tbsp", "pinch"].includes(unit) ? `${unit}s` : unit;
+  const plural = amount > 1 ? pluralUnit(unit) : unit;
   return `${n} ${plural}`;
 }
 

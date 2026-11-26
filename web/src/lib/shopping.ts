@@ -3,7 +3,7 @@ import { CATEGORIES, type Category } from "./recipe-model";
 import { formatQuantity } from "./format";
 import { canonicalItems } from "./item-names";
 import { splitLeadingQuantity } from "./parse-ingredient";
-import { densityOf, eachWeight, knownUnit, normaliseUnit, sizeInText, toMetric, unitAtStartOf } from "./units";
+import { densityOf, eachOf, knownUnit, normaliseUnit, sizeInText, toMetric, unitAtStartOf } from "./units";
 
 export type ListInput = {
   item: string;
@@ -26,7 +26,7 @@ export type ShoppingItem = {
 };
 
 /** Things you buy whole: always round up. */
-const WHOLE_UNITS = new Set(["can", "sheet", "clove", "bunch", "packet", "slice", "piece", "stalk", "sprig", "stick", "bulb"]);
+const WHOLE_UNITS = new Set(["can", "sheet", "clove", "bunch", "packet", "slice", "piece", "stalk", "sprig", "stick", "bulb", "loaf"]);
 
 /**
  * Grams or millilitres, rounded up so there's always enough: 3g, 45g, 340g, then kg / L
@@ -107,10 +107,19 @@ export function buildShoppingList(
         t.set("g", (t.get("g") ?? 0) + t.get("ml")! * UNKNOWN_DENSITY);
         t.delete("ml");
       }
-      // "12 dates" + "⅔ cup dates": one amount in grams.
-      const each = eachWeight(acc.item);
-      if (each && t.has("g") && t.has("count")) {
-        t.set("g", t.get("g")! + t.get("count")! * each);
+      const each = eachOf(acc.item);
+      if (each?.buy === "each") {
+        // Apples and loaves of bread are bought one at a time: turn weights into how many.
+        const count =
+          (t.get("count") ?? 0) +
+          (t.get("piece") ?? 0) +
+          (t.get("loaf") ?? 0) +
+          (t.get("g") ?? 0) / each.grams;
+        for (const k of ["count", "piece", "loaf", "g"]) t.delete(k);
+        if (count > 0) t.set(each.unit ?? "count", count);
+      } else if (each?.grams && t.has("g") && t.has("count")) {
+        // "12 dates" + "⅔ cup dates": one amount in grams.
+        t.set("g", t.get("g")! + t.get("count")! * each.grams);
         t.delete("count");
       }
       // Garlic is bought by the bulb (about 10 cloves).

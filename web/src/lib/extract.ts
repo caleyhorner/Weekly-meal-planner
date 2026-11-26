@@ -35,7 +35,7 @@ const ExtractedRecipe = z.object({
       unit: z
         .string()
         .nullable()
-        .describe("One of: g, kg, ml, l, tsp, tbsp, cup, clove, can, bunch, sheet, slice, packet, pinch, handful, sprig, stalk, piece; null for a plain count like '2 onions'"),
+        .describe("One of: g, kg, ml, l, tsp, tbsp, cup, oz, lb, fl oz, stick, pint, quart, clove, can, bunch, sheet, slice, packet, pinch, handful, sprig, stalk, piece; null for a plain count like '2 onions'"),
       prep: z.string().nullable().describe("Preparation or note, e.g. 'finely diced', 'to serve'"),
       category: z.enum(CATEGORIES).describe("Supermarket aisle"),
     }),

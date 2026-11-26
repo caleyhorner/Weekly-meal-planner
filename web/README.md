@@ -12,6 +12,14 @@ AI import from photos, links and pasted text with a review screen.
 off, "already have it" ticks, copy or share for Telegram) and settings for household size,
 staples and "same thing" item names.
 
+The shopping list is always in grams and millilitres (kg and L from 1000). Cups, spoons, oz, lb,
+pints and sticks of butter are converted using Australian measures (cup 250ml, tbsp 20ml,
+tsp 5ml), and common ingredients bought by weight (flour, sugar, butter, nuts, cheese, salt…)
+are turned from cups into grams. Varieties of one thing share a line: kosher, sea and table salt
+are all "salt", "salt and pepper" becomes two lines, and American names become Australian ones
+(all-purpose flour → plain flour, heavy cream → thickened cream, chicken broth → chicken stock).
+Recipes themselves still show the amounts as written.
+
 ## Deploying to Vercel (one-time setup)
 
 1. **Import the repo** at vercel.com → *Add New → Project*, pick `Weekly-meal-planner`.

@@ -1,27 +1,8 @@
 import type { Category, IngredientInput } from "./recipe-model";
+import { knownUnit } from "./units";
 
 // Quick parser for ingredients typed by hand on the edit screen
 // ("2 tbsp olive oil, for frying"). AI imports don't use this: Claude splits those.
-
-const UNIT_SYNONYMS: Record<string, string> = {
-  g: "g", gram: "g", grams: "g", gr: "g",
-  kg: "kg", kilo: "kg", kilos: "kg", kilogram: "kg", kilograms: "kg",
-  ml: "ml", millilitre: "ml", millilitres: "ml", milliliter: "ml", milliliters: "ml",
-  l: "l", litre: "l", litres: "l", liter: "l", liters: "l",
-  tsp: "tsp", teaspoon: "tsp", teaspoons: "tsp",
-  tbsp: "tbsp", tbs: "tbsp", tablespoon: "tbsp", tablespoons: "tbsp",
-  cup: "cup", cups: "cup",
-  clove: "clove", cloves: "clove",
-  can: "can", cans: "can", tin: "can", tins: "can",
-  bunch: "bunch", bunches: "bunch",
-  sheet: "sheet", sheets: "sheet",
-  slice: "slice", slices: "slice",
-  packet: "packet", packets: "packet", pack: "packet", packs: "packet",
-  pinch: "pinch", pinches: "pinch",
-  handful: "handful", handfuls: "handful",
-  sprig: "sprig", sprigs: "sprig",
-  stalk: "stalk", stalks: "stalk",
-};
 
 const UNICODE_FRACTIONS: Record<string, number> = {
   "½": 0.5, "⅓": 1 / 3, "⅔": 2 / 3, "¼": 0.25, "¾": 0.75, "⅛": 0.125,
@@ -84,9 +65,12 @@ export function splitLeadingQuantity(raw: string): {
     const upper = qty[2] ? parseNumber(qty[2]) : null;
     amount = upper ?? first; // ranges: buy for the upper end
     rest = rest.slice(qty[0].length).trim();
-    const unitMatch = rest.match(/^([a-zA-Z]+)\.?(?:\s+of)?\b\s*/);
-    if (unitMatch && UNIT_SYNONYMS[unitMatch[1].toLowerCase()]) {
-      unit = UNIT_SYNONYMS[unitMatch[1].toLowerCase()];
+    // "fl oz" is two words; every other unit is one ("cups", "tbsp.", "lb").
+    const unitMatch =
+      rest.match(/^(fl\.?\s*oz)(?:\.|\b)(?:\s+of\b)?\s*/i) ?? rest.match(/^([a-zA-Z]+)(?:\.|\b)(?:\s+of\b)?\s*/);
+    const found = unitMatch ? knownUnit(unitMatch[1]) : null;
+    if (unitMatch && found) {
+      unit = found;
       rest = rest.slice(unitMatch[0].length);
     }
   }

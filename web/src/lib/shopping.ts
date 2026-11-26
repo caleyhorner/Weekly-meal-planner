@@ -109,14 +109,20 @@ export function buildShoppingList(
       }
       const each = eachOf(acc.item);
       if (each?.buy === "each") {
-        // Apples and loaves of bread are bought one at a time: turn weights into how many.
+        // Apples, carrots and loaves of bread are bought one at a time: turn weights into how many.
         const count =
-          (t.get("count") ?? 0) +
-          (t.get("piece") ?? 0) +
-          (t.get("loaf") ?? 0) +
-          (t.get("g") ?? 0) / each.grams;
+          (t.get("count") ?? 0) + (t.get("piece") ?? 0) + (t.get("loaf") ?? 0) + (t.get("g") ?? 0) / each.grams;
         for (const k of ["count", "piece", "loaf", "g"]) t.delete(k);
         if (count > 0) t.set(each.unit ?? "count", count);
+      } else if (each?.buy === "bunch") {
+        // Kale, celery and herbs come in bunches: weights, stalks and sprigs become bunches.
+        const per = each.per ?? 1;
+        const bunches =
+          (t.get("bunch") ?? 0) +
+          (t.get("g") ?? 0) / each.grams +
+          ((t.get("count") ?? 0) + (t.get("stalk") ?? 0) + (t.get("sprig") ?? 0) + (t.get("piece") ?? 0)) / per;
+        for (const k of ["bunch", "g", "count", "stalk", "sprig", "piece"]) t.delete(k);
+        if (bunches > 0) t.set("bunch", bunches);
       } else if (each?.grams && t.has("g") && t.has("count")) {
         // "12 dates" + "⅔ cup dates": one amount in grams.
         t.set("g", t.get("g")! + t.get("count")! * each.grams);

@@ -54,6 +54,7 @@ export async function shoppingListFor(meals: ListMeal[], haveIt: Set<string>) {
       category: ing.category,
       recipe: m.recipe.title,
       factor: m.factor,
+      raw: ing.rawText,
     })),
   );
 

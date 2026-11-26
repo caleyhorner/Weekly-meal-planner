@@ -1,6 +1,7 @@
 // Gives each shopping item one name, so "kosher salt", "sea salt" and "salt" land on one
 // line, and American recipe names become what an Australian supermarket calls them.
 // Pure functions. The household's own "same thing as" merges are applied on top of these.
+import { unitAtStartOf } from "./units";
 
 /** Words that don't change what you buy. Only stripped from the front of the name. */
 const LEADING_NOISE = [
@@ -82,6 +83,8 @@ function canonicalOne(item: string): string {
     .replace(/[,;].*$/, "")
     .replace(/\s+/g, " ")
     .trim();
+  // "lbs sweet potatoes" (an amount left in the name): the unit isn't part of the item.
+  s = unitAtStartOf(s)?.rest ?? s;
 
   // Plural last word: "onions" → "onion", "tomatoes" → "tomato".
   const words = s.split(" ");

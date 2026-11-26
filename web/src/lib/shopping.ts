@@ -2,7 +2,8 @@
 import { CATEGORIES, type Category } from "./recipe-model";
 import { formatQuantity } from "./format";
 import { canonicalItems } from "./item-names";
-import { densityOf, normaliseUnit, toMetric } from "./units";
+import { splitLeadingQuantity } from "./parse-ingredient";
+import { densityOf, knownUnit, normaliseUnit, sizeInText, toMetric, unitAtStartOf } from "./units";
 
 export type ListInput = {
   item: string;
@@ -12,6 +13,8 @@ export type ListInput = {
   recipe: string;
   /** How much of the recipe is being made that night (½, 1, 2, 3…). */
   factor: number;
+  /** The ingredient line as the recipe wrote it, for amounts the stored unit missed. */
+  raw?: string;
 };
 
 export type ShoppingItem = {
@@ -81,10 +84,8 @@ export function buildShoppingList(
       acc.recipes.add(line.recipe);
       if (line.amount == null) continue;
 
-      const amount = line.amount * line.factor;
-      const metric = toMetric(amount, line.unit, item);
-      const key = metric ? metric.unit : (normaliseUnit(line.unit) ?? "count");
-      acc.totals.set(key, (acc.totals.get(key) ?? 0) + (metric ? metric.amount : amount));
+      const { key, amount } = quantityOf(line, item);
+      acc.totals.set(key, (acc.totals.get(key) ?? 0) + amount);
     }
   }
 
@@ -100,6 +101,11 @@ export function buildShoppingList(
       } else if (d && d.buy === "ml" && t.has("g")) {
         t.set("ml", (t.get("ml") ?? 0) + t.get("g")! / d.density);
         t.delete("g");
+      } else if (!d && t.has("ml") && !LIQUID_AISLES.has(acc.category)) {
+        // Cups of something we don't know (marshmallows, croutons): you buy it by weight,
+        // so give a rough weight rather than millilitres.
+        t.set("g", (t.get("g") ?? 0) + t.get("ml")! * UNKNOWN_DENSITY);
+        t.delete("ml");
       }
       const keys = [...t.keys()].sort((a, b) => rank(a) - rank(b));
       return {
@@ -116,6 +122,51 @@ export function buildShoppingList(
       };
     })
     .sort((a, b) => order(a.category) - order(b.category) || a.item.localeCompare(b.item));
+}
+
+/** Aisles where an unknown item measured in cups is probably a liquid. */
+const LIQUID_AISLES = new Set<Category>(["Drinks", "Condiments & Sauces", "Dairy & Eggs"]);
+/** Grams per millilitre for dry things we have no figure for. */
+const UNKNOWN_DENSITY = 0.5;
+
+/** Units you'd buy a number of, where the line may say how big each one is. */
+const PACKS = new Set(["can", "packet", "piece"]);
+
+/**
+ * One line's amount in grams or millilitres where at all possible, falling back to the
+ * recipe's own wording when the stored unit is missing or odd:
+ *   unit "cups, packed"                   → ml
+ *   item "lbs sweet potatoes", no unit    → g
+ *   "2 (15-ounce) cans pumpkin puree"     → 2 × 425 g
+ *   "1 (12 to 14 lb) turkey"              → 6.35 kg
+ */
+function quantityOf(line: ListInput, item: string): { key: string; amount: number } {
+  const amount = line.amount! * line.factor;
+  const unit = normaliseUnit(line.unit);
+  const direct = toMetric(amount, unit, item);
+  if (direct) return { key: direct.unit, amount: direct.amount };
+
+  const known = unit == null || knownUnit(unit) != null;
+  if (!known || unit == null) {
+    // The unit may have ended up in the name, or only the original line has it.
+    const fromName = unitAtStartOf(line.item);
+    const m = fromName && toMetric(amount, fromName.unit, item);
+    if (m) return { key: m.unit, amount: m.amount };
+    if (line.raw) {
+      const lead = splitLeadingQuantity(line.raw);
+      const r = lead.amount != null && lead.unit ? toMetric(lead.amount * line.factor, lead.unit, item) : null;
+      if (r) return { key: r.unit, amount: r.amount };
+    }
+  }
+  if (unit == null || PACKS.has(unit)) {
+    const size = line.raw ? sizeInText(line.raw) : null;
+    // Australian cans and packs are labelled in grams: use them. Counted things ("1 onion
+    // (about 200g)") stay counted unless the size is in pounds or ounces.
+    if (size && (unit != null || size.imperial)) {
+      return { key: size.metric.unit, amount: amount * size.metric.amount };
+    }
+  }
+  return { key: unit ?? "count", amount };
 }
 
 /** Weights and volumes first, then counts, then cans, bunches and the like. */

@@ -137,3 +137,41 @@ test("staples catch every variety, and the household's own merges still win", ()
   );
   assert.deepEqual(list.map((i) => i.item), ["shallot"]);
 });
+
+test("odd units, units left in names and pack sizes all become grams and millilitres", () => {
+  const list = buildShoppingList(
+    [
+      line({ item: "lbs sweet potatoes", amount: 3, category: "Produce", raw: "3 lbs sweet potatoes" }),
+      line({ item: "russet potato", amount: 2, unit: "pounds (about 1 kg)", category: "Produce" }),
+      line({ item: "sugar", amount: 2, unit: "heaped tbsp", category: "Pantry" }),
+      line({ item: "brown sugar", amount: 1, unit: "cup(s), packed", category: "Pantry" }),
+      line({ item: "vanilla extract", amount: 2, unit: "teaspoons", category: "Pantry" }),
+      line({ item: "pumpkin puree", amount: 2, unit: "can", category: "Pantry", raw: "2 (15-ounce) cans pumpkin puree" }),
+      line({ item: "turkey", amount: 1, category: "Meat & Seafood", raw: "1 (12 to 14 lb) whole turkey" }),
+      line({ item: "chickpeas", amount: 1, unit: "can", category: "Pantry", raw: "1 can chickpeas, drained" }),
+      line({ item: "onion", amount: 2, category: "Produce", raw: "2 onions (about 300g)" }),
+      line({ item: "ground beef", amount: 1, category: "Meat & Seafood", raw: "1 lb ground beef" }),
+      line({ item: "mini marshmallow", amount: 2, unit: "cups", category: "Pantry" }),
+      line({ item: "egg", amount: 3, unit: "large", category: "Dairy & Eggs" }),
+      line({ item: "butter", amount: 1, unit: "knob", category: "Dairy & Eggs" }),
+    ],
+    { aliases: new Map(), staples: new Set() },
+  );
+  const get = (n: string) => list.find((i) => i.item === n)?.quantities;
+  assert.deepEqual(get("sweet potato"), ["1.37kg"]);
+  assert.deepEqual(get("russet potato"), ["910g"]);
+  assert.deepEqual(get("sugar"), ["34g"]);
+  assert.deepEqual(get("brown sugar"), ["225g"]);
+  assert.deepEqual(get("vanilla extract"), ["10ml"]);
+  assert.deepEqual(get("pumpkin puree"), ["855g"]);
+  assert.deepEqual(get("turkey"), ["6.36kg"]);
+  assert.deepEqual(get("chickpea"), ["1 can"]);
+  assert.deepEqual(get("onion"), ["×2"]);
+  assert.deepEqual(get("beef mince"), ["455g"]);
+  assert.deepEqual(get("mini marshmallow"), ["250g"]);
+  assert.deepEqual(get("egg"), ["×3"]);
+  assert.deepEqual(get("butter"), ["19g"]);
+  // Nothing left in cups, spoons, pounds or ounces.
+  const all = list.flatMap((i) => [i.item, ...i.quantities]).join(" ");
+  assert.doesNotMatch(all, /\b(cups?|tsp|tbsp|lbs?|oz|pounds?|ounces?|teaspoons?|tablespoons?)\b/i);
+});

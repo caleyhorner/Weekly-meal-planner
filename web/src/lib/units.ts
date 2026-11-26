@@ -35,6 +35,7 @@ const UNIT_SYNONYMS: Record<string, string> = {
   sprig: "sprig", sprigs: "sprig",
   stalk: "stalk", stalks: "stalk",
   piece: "piece", pieces: "piece",
+  bulb: "bulb", bulbs: "bulb", head: "bulb", heads: "bulb",
 };
 
 /** Words around a unit that don't change it: "heaped tbsp", "cups, packed", "lb bag". */
@@ -85,7 +86,10 @@ export function knownUnit(unit: string): string | null {
 }
 
 /** Grams in one of these. */
-const MASS: Record<string, number> = { mg: 0.001, g: 1, kg: 1000, oz: 28.35, lb: 453.6 };
+const MASS: Record<string, number> = {
+  mg: 0.001, g: 1, kg: 1000, oz: 28.35, lb: 453.6,
+  handful: 30, // a cook's guess: a handful of rocket, spinach or nuts
+};
 /** Millilitres in one of these. */
 const VOLUME: Record<string, number> = {
   ml: 1, cl: 10, dl: 100, l: 1000,
@@ -111,13 +115,13 @@ export function toMetric(amount: number, unit: string | null, item = ""): Metric
   return null;
 }
 
-const GUESSES = new Set(["splash", "drizzle", "dollop", "knob", "glug"]);
+const GUESSES = new Set(["splash", "drizzle", "dollop", "knob", "glug", "handful"]);
 
 /** Weight and volume units, spelled any way, for finding sizes inside text. */
 const SIZE_UNITS = Object.keys(UNIT_SYNONYMS)
   .filter((k) => {
     const v = UNIT_SYNONYMS[k];
-    return v in MASS || (v in VOLUME && VOLUME[v] >= 1 && !GUESSES.has(v));
+    return (v in MASS || (v in VOLUME && VOLUME[v] >= 1)) && !GUESSES.has(v);
   })
   .filter((k) => k.length > 1 || k === "g" || k === "l")
   .sort((a, b) => b.length - a.length)
@@ -188,6 +192,7 @@ const DENSITIES: [string[], number, "g" | "ml"][] = [
   [["breadcrumb", "stuffing mix"], 0.45, "g"],
   [["oat"], 0.4, "g"],
   [["rice", "quinoa", "couscous", "lentil", "polenta", "cornmeal", "semolina"], 0.85, "g"],
+  [["feta", "goat cheese", "goats cheese", "goat's cheese", "chevre", "blue cheese", "gorgonzola", "stilton", "halloumi", "brie", "camembert", "paneer", "tofu"], 0.6, "g"],
   [["parmesan", "pecorino", "grated cheese", "shredded cheese", "cheddar", "mozzarella", "gruyere", "gruyère", "cheese"], 0.4, "g"],
   [["pecan", "walnut", "almond", "cashew", "hazelnut", "pistachio", "pine nut", "peanut", "nut"], 0.5, "g"],
   [["dried cranberry", "dried cranberries", "raisin", "sultana", "currant", "dried fruit", "date"], 0.6, "g"],
@@ -212,5 +217,28 @@ const DENSITY_PATTERNS = DENSITIES.map(([words, density, buy]) => ({
 /** How a millilitre of this item weighs and how it's bought, or null if we don't know. */
 export function densityOf(item: string): { density: number; buy: "g" | "ml" } | null {
   for (const p of DENSITY_PATTERNS) if (p.re.test(item)) return { density: p.density, buy: p.buy };
+  return null;
+}
+
+// Roughly what one weighs, so "12 dates" and "⅔ cup dates" can be one amount in grams.
+const EACH: [string[], number][] = [
+  [["medjool date", "date"], 20],
+  [["sweet potato"], 300],
+  [["potato"], 200],
+  [["apple", "pear", "orange"], 180],
+  [["onion", "red onion", "brown onion"], 160],
+  [["shallot", "eschalot"], 40],
+  [["carrot"], 120],
+  [["zucchini", "capsicum"], 200],
+  [["tomato"], 120],
+  [["lemon", "lime"], 100],
+  [["banana"], 120],
+  [["fig"], 50],
+];
+const EACH_PATTERNS = EACH.map(([words, g]) => ({ re: new RegExp(`(^|\\s)(${words.join("|")})$`, "i"), g }));
+
+/** Grams one of these weighs, or null if we don't know. */
+export function eachWeight(item: string): number | null {
+  for (const p of EACH_PATTERNS) if (p.re.test(item)) return p.g;
   return null;
 }
